@@ -20,7 +20,7 @@ pixsim_detproperties:
   TimeOffsetZ:       0.
   ReadOutWindowSize: 110000
   InheritNumberTimeSamples: false
-  SamplingRate:      -20 
+  SamplingRate:      -5
 
   SternheimerA:     0.1956  # Ar Sternheimer parameter a.
   SternheimerK:     3.0000  # Ar Sternheimer parameter k.

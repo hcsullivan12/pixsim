@@ -103,7 +103,7 @@ void PixSimGeometry::Initialize()
   LookAtNode(topNode, path);
  
   // Force the gdml to have the optical and active volumes 
-  if (fOpDetVolName.find("volOpDetSensitive") == std::string::npos) throw cet::exception("PixSimGeometry") << "Couldn't find optical detector volume!\n";
+  if (fOpDetVolName.find("volOpDetSensitive") == std::string::npos) mf::LogWarning("PixSimGeometry") << "Couldn't find optical detector volume!\n";
   if (fLArTPCVolName.find("volLArActive") == std::string::npos)     throw cet::exception("PixSimGeometry") << "Couldn't find LAr active volume!\n";
   if (!fPixelPlane)                                                 throw cet::exception("PixSimGeometry") << "Couldn't find pixel plane volume!\n";
 

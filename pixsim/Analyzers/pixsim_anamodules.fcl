@@ -1,4 +1,3 @@
-#include "pixsim_propagationalgs.fcl"
 
 BEGIN_PROLOG
 
@@ -7,7 +6,7 @@ pixsim_ana:
  module_type:          "PixSimAnaTree"
  G4ModuleLabel:        "largeant"
  GenieModuleLabel:     "generator"
- PhotProjModuleLabel:  "photproj"
+ MCShowerModuleLabel:  "mcreco"
 }
 
 pixsim_viewsignal:

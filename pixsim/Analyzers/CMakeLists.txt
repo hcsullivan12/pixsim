@@ -1,6 +1,5 @@
 art_make(LIB_LIBRARIES 
-         MODULE_LIBRARIES pixsim_PropagationAlgs
-                          pixsim_Geometry
+         MODULE_LIBRARIES pixsim_Geometry
                           pixsim_LArG4
                           nusimdata_SimulationBase
                           lardataobj_RawData
