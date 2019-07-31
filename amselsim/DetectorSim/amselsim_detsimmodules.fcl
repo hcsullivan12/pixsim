@@ -1,0 +1,20 @@
+#include "detsimmodules.fcl"
+
+BEGIN_PROLOG
+
+amselsim_simpixel:
+{
+ module_type:        "SimQPix"
+ DriftEModuleLabel:  "largeant" 
+ DeltaQ:             5000  # electrons
+ ResetT:             20    # ns
+ NoiseMean:          0.0
+ NoiseSigma:         2     
+}
+
+amselsim_photonprojection:
+{
+ module_type:        "PhotonProjection"
+}
+
+END_PROLOG
