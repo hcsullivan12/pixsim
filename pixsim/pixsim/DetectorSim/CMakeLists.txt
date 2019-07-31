@@ -2,14 +2,14 @@ include_directories( $ENV{LARDATA_INC}    )
 include_directories( $ENV{LARCORE_INC}    )
 include_directories( $ENV{LARSIM_INC}     )
 include_directories( $ENV{POSTGRESQL_INC} )
-art_make(LIB_LIBRARIES amselsim_Geometry
+art_make(LIB_LIBRARIES pixsim_Geometry
          MODULE_LIBRARIES 
                           larevt_Filters
                           lardataobj_Simulation
-                          amselsim_Geometry
-                          amselsim_Services
-                          amselsim_LArG4
-                          amselsim_Services_AmSelSignalShapingService_service
+                          pixsim_Geometry
+                          pixsim_Services
+                          pixsim_LArG4
+                          pixsim_Services_AmSelSignalShapingService_service
                           lardataobj_RecoBase
 			  lardataobj_RawData
                           lardata_ArtDataHelper

@@ -38,10 +38,10 @@
 #include "TF1.h"
 #include "TTree.h"
 
-// amselsim includes
-#include "amselsim/Geometry/DetectorGeometryService.h"
+// pixsim includes
+#include "pixsim/Geometry/DetectorGeometryService.h"
 
-namespace amselsim
+namespace pixsim
 {
 
 class AmSelAnaTree : public art::EDAnalyzer 
@@ -654,4 +654,4 @@ void AmSelAnaTree::ResetVars()
 
 }
 
-DEFINE_ART_MODULE(amselsim::AmSelAnaTree)
+DEFINE_ART_MODULE(pixsim::AmSelAnaTree)

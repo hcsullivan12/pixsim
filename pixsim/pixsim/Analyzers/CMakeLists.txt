@@ -1,7 +1,7 @@
 art_make(LIB_LIBRARIES 
-         MODULE_LIBRARIES amselsim_PropagationAlgs
-                          amselsim_Geometry
-                          amselsim_LArG4
+         MODULE_LIBRARIES pixsim_PropagationAlgs
+                          pixsim_Geometry
+                          pixsim_LArG4
                           nusimdata_SimulationBase
                           lardataobj_RawData
                           ${ART_FRAMEWORK_CORE}

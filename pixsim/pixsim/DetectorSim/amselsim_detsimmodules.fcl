@@ -2,7 +2,7 @@
 
 BEGIN_PROLOG
 
-amselsim_simpixel:
+pixsim_simpixel:
 {
  module_type:        "SimQPix"
  DriftEModuleLabel:  "largeant" 
@@ -12,7 +12,7 @@ amselsim_simpixel:
  NoiseSigma:         2     
 }
 
-amselsim_photonprojection:
+pixsim_photonprojection:
 {
  module_type:        "PhotonProjection"
 }

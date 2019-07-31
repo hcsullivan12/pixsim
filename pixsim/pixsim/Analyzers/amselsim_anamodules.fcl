@@ -1,8 +1,8 @@
-#include "amselsim_propagationalgs.fcl"
+#include "pixsim_propagationalgs.fcl"
 
 BEGIN_PROLOG
 
-amselsim_ana:
+pixsim_ana:
 {
  module_type:          "AmSelAnaTree"
  G4ModuleLabel:        "largeant"
@@ -10,7 +10,7 @@ amselsim_ana:
  PhotProjModuleLabel:  "photproj"
 }
 
-amselsim_viewsignal:
+pixsim_viewsignal:
 {
   module_type:    "ViewSignal"
 }

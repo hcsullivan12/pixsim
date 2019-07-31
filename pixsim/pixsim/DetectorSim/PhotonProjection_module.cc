@@ -22,8 +22,8 @@
 #include "lardata/DetectorInfoServices/DetectorClocksServiceStandard.h"
 #include "nurandom/RandomUtils/NuRandomService.h"
 
-#include "amselsim/Geometry/DetectorGeometryService.h"
-#include "amselsim/LArG4/IonizationAndScintillation.h"
+#include "pixsim/Geometry/DetectorGeometryService.h"
+#include "pixsim/LArG4/IonizationAndScintillation.h"
 
 #include "TH1.h"
 
@@ -32,7 +32,7 @@
 
 #include <memory>
 
-namespace amselsim
+namespace pixsim
 {
 
 class PhotonProjection;

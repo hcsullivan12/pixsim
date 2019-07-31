@@ -1,8 +1,8 @@
 # ======================================================================
-#  amselsim main build file
+#  pixsim main build file
 #
 #  cd .../path/to/build/directory
-#  source .../path/to/amselsim/ups/setup_for_development <-d|-p>
+#  source .../path/to/pixsim/ups/setup_for_development <-d|-p>
 #  cmake [-DCMAKE_INSTALL_PREFIX=/install/path]
 #        -DCMAKE_BUILD_TYPE=$CETPKG_TYPE
 #        $CETPKG_SOURCE
@@ -16,7 +16,7 @@
 # use cmake 2.8 or later
 cmake_minimum_required (VERSION 2.8)
 
-project(amselsim)
+project(pixsim)
 
 # cetbuildtools contains our cmake modules
 SET ( CETBUILDTOOLS_VERSION $ENV{CETBUILDTOOLS_VERSION} )
@@ -125,7 +125,7 @@ include(ArtMake)
 include(BuildPlugins)
 
 # source
-add_subdirectory(amselsim)
+add_subdirectory(pixsim)
 
 # tests
 add_subdirectory(test)

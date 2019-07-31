@@ -26,8 +26,8 @@
 #include "lardataobj/Simulation/SimChannel.h"
 #include "nurandom/RandomUtils/NuRandomService.h"
 
-#include "amselsim/Geometry/DetectorGeometryService.h"
-#include "amselsim/Services/AmSelSignalShapingService.h"
+#include "pixsim/Geometry/DetectorGeometryService.h"
+#include "pixsim/Services/AmSelSignalShapingService.h"
 
 #include "CLHEP/Random/RandGaussQ.h"
 
