@@ -49,7 +49,7 @@
 #include "lardata/Utilities/AssociationUtil.h"
 
 
-#include "amselsim/Geometry/DetectorGeometryService.h"
+#include "pixsim/Geometry/DetectorGeometryService.h"
 
 ///Event Generation using GENIE, cosmics or single particles
 namespace evgen {

@@ -9,10 +9,10 @@
 #include "Geant4/G4VPhysicsConstructor.hh"
 
 #ifndef CUSTOMPHYSICSTABLE_hh
-namespace amselg4 { class CustomPhysicsTable; }
+namespace pixsimg4 { class CustomPhysicsTable; }
 #endif
 
-namespace amselg4 {
+namespace pixsimg4 {
   class CustomPhysicsFactoryBase
   {
   public:
@@ -44,9 +44,9 @@ namespace amselg4 {
     bool verbose;
   };
 }
-#include "amselsim/LArG4/CustomPhysicsTable.hh"
+#include "pixsim/LArG4/CustomPhysicsTable.hh"
 
-namespace amselg4 {
+namespace pixsimg4 {
 
   template<class T> G4VPhysicsConstructor * CustomPhysicsFactory<T>::Build()
   {

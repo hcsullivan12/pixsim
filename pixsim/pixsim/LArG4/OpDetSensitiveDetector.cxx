@@ -12,13 +12,13 @@
 
 
 
-#include "amselsim/LArG4/OpDetSensitiveDetector.h"
-#include "amselsim/LArG4/OpDetPhotonTable.h"
-#include "amselsim/LArG4/OpDetLookup.h"
+#include "pixsim/LArG4/OpDetSensitiveDetector.h"
+#include "pixsim/LArG4/OpDetPhotonTable.h"
+#include "pixsim/LArG4/OpDetLookup.h"
 #include "lardataobj/Simulation/SimPhotons.h"
 #include "Geant4/G4SDManager.hh"
 
-namespace amselg4{
+namespace pixsimg4{
 
 
   OpDetSensitiveDetector::OpDetSensitiveDetector(G4String DetectorUniqueName)

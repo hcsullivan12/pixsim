@@ -22,8 +22,8 @@
 ///   readouts, so this mechanism is relatively easy to extend for
 ///   each type of readout.
 
-#ifndef AmSelG4_AuxDetReadoutGeometry_h
-#define AmSelG4_AuxDetReadoutGeometry_h
+#ifndef PixSimG4_AuxDetReadoutGeometry_h
+#define PixSimG4_AuxDetReadoutGeometry_h
 
 #include "larcore/Geometry/Geometry.h"
 #include "Geant4/G4VUserParallelWorld.hh"
@@ -31,9 +31,9 @@
 #include "Geant4/G4Transform3D.hh"
 #include "Geant4/G4VPhysicalVolume.hh"
 
-#include "amselsim/Geometry/AmSelGeometryService.h"
+#include "pixsim/Geometry/PixSimGeometryService.h"
 
-namespace amselg4 {
+namespace pixsimg4 {
 
   class AuxDetReadoutGeometry : public G4VUserParallelWorld
   {
@@ -62,6 +62,6 @@ namespace amselg4 {
 
   };
 
-} // namespace amselg4
+} // namespace pixsimg4
 
-#endif // AmSelG4_AuxDetReadoutGeometry_h
+#endif // PixSimG4_AuxDetReadoutGeometry_h

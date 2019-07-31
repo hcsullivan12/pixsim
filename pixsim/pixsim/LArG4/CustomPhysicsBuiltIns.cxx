@@ -3,9 +3,9 @@
 //
 /// \author  bjpjones@mit.edu
 ////////////////////////////////////////////////////////////////////////
-#include "amselsim/LArG4/CustomPhysicsBuiltIns.hh"
+#include "pixsim/LArG4/CustomPhysicsBuiltIns.hh"
 
-namespace amselg4 {
+namespace pixsimg4 {
 
   EmPhysicsFactory              f1;
   SynchrotronAndGN              f2;

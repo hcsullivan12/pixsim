@@ -2,9 +2,9 @@
 
 BEGIN_PROLOG
 
-amselsim_detproperties:
+pixsim_detproperties:
 {
-  service_provider: "DetectorPropertiesServiceAmSel"
+  service_provider: "DetectorPropertiesServicePixSim"
   GetElectronlifetimeFromDB: false
   ElectronlifetimeTag:       ""  
   UseDatabaseForMC:          false
@@ -29,7 +29,7 @@ amselsim_detproperties:
   SternheimerCbar:  5.2146  # Ar Sternheimer parameter Cbar.
 }
 
-amselsim_signalshapingservice:
+pixsim_signalshapingservice:
 {
   
 }

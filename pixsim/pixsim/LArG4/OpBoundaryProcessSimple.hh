@@ -1,8 +1,8 @@
 /**
- * @file   amselsim/LArG4/OpBoundaryProcessSimple.hh
+ * @file   pixsim/LArG4/OpBoundaryProcessSimple.hh
  * @author Ben Jones (bjpjones@mit.edu)
  * @date   March 2010
- * @see    amselsim/LArG4/OpBoundaryProcessSimple.cxx
+ * @see    pixsim/LArG4/OpBoundaryProcessSimple.cxx
  */
 
 
@@ -72,7 +72,7 @@
 // Class Definition
 /////////////////////
 
-namespace amselg4 {
+namespace pixsimg4 {
 
   // Possible statuses of a particle after each step.
   enum OpBoundaryProcessSimpleStatus {  Undefined, NotAtBoundary, SimpleAbsorbedNoRefl,
@@ -85,7 +85,7 @@ namespace amselg4 {
    * This class invokes a simplified model of optical reflections at
    * boundaries between different materials.  The relevant reflectivities
    * are ultimately read from `detinfo::LArProperties` via
-   * `amselg4::MaterialPropertiesLoader`.
+   * `pixsimg4::MaterialPropertiesLoader`.
    *
    * The required parameters are total reflectance
    * (`detinfo::LArProperties::SurfaceReflectances()`)
@@ -99,7 +99,7 @@ namespace amselg4 {
    * to the supplied probability.  All materials with no defined
    * reflectance are assumed to be black and absorb all incident photons.
    *
-   * This physics process is loaded in `amselg4::OpticalPhysics` physics
+   * This physics process is loaded in `pixsimg4::OpticalPhysics` physics
    * constructor.
    *
    * This class is based on the `G4OpBoundaryProcess` class in Geant4 and was

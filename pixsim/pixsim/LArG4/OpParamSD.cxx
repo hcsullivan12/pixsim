@@ -12,12 +12,12 @@
 
 // LArSoft includes
 
-#include "amselsim/LArG4/OpParamSD.h"
+#include "pixsim/LArG4/OpParamSD.h"
 
 #include "cetlib_except/exception.h"
 
-#include "amselsim/LArG4/OpDetPhotonTable.h"
-#include "amselsim/LArG4/OpDetLookup.h"
+#include "pixsim/LArG4/OpDetPhotonTable.h"
+#include "pixsim/LArG4/OpDetLookup.h"
 #include "lardataobj/Simulation/SimPhotons.h"
 
 // Geant4 includes
@@ -27,7 +27,7 @@
 #include "Geant4/G4RandomTools.hh"
 
 
-namespace amselg4{
+namespace pixsimg4{
 
 
   OpParamSD::OpParamSD(G4String DetectorUniqueName, std::string ModelName, int Orientation, std::vector<std::vector<double> > ModelParameters)

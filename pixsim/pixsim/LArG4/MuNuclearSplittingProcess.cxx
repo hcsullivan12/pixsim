@@ -12,7 +12,7 @@
 //
 
 
-#include "amselsim/LArG4/MuNuclearSplittingProcess.h"
+#include "pixsim/LArG4/MuNuclearSplittingProcess.h"
 
 #include <stdexcept> // std::runtime_error
 
@@ -34,7 +34,7 @@
 
 #include <TMath.h>
 
-namespace amselg4 {
+namespace pixsimg4 {
 
 G4VParticleChange* MuNuclearSplittingProcess::PostStepDoIt(const G4Track& track, const G4Step& step)
 {

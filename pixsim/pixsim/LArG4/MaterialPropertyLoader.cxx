@@ -11,8 +11,8 @@
 // TODO convert tabs into spaces
 
 // TODO verify the inclusion list
-#include "amselsim/LArG4/MaterialPropertyLoader.h"
-#include "amselsim/Geometry/AmSelGeometryService.h"
+#include "pixsim/LArG4/MaterialPropertyLoader.h"
+#include "pixsim/Geometry/PixSimGeometryService.h"
 #include "lardata/DetectorInfoServices/LArPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "Geant4/G4Material.hh"
@@ -21,7 +21,7 @@
 #include "Geant4/G4OpticalSurface.hh"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
-namespace amselg4 {
+namespace pixsimg4 {
 
   //----------------------------------------------
   void MaterialPropertyLoader::SetMaterialProperty(std::string Material,

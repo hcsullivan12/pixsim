@@ -1,6 +1,6 @@
 #include "genie.fcl"
-#include "amselsim_largeantmodules.fcl"
-#include "amselsim_services.fcl"
+#include "pixsim_largeantmodules.fcl"
+#include "pixsim_services.fcl"
 
 process_name: GenieGen
 
@@ -12,7 +12,7 @@ services:
   MemoryTracker:         { } # default is one
   IFDH: {}
   RandomNumberGenerator: {} #ART native random number generator
-                @table::amselsim_simulation_services
+                @table::pixsim_simulation_services
 }
 
 #Start each new event with an empty event.
@@ -34,7 +34,7 @@ physics:
  producers:
  {
    generator: @local::standard_genie
-   largeant:  @local::amselsim_largeant	       
+   largeant:  @local::pixsim_largeant	       
    rns:       { module_type: "RandomNumberSaver" }
  }
 

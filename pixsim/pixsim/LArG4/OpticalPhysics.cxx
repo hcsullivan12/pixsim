@@ -6,7 +6,7 @@
 // - Cerenkov light can be enabled or disabled as required
 //
 // - The default geant4 reflection process is swapped for a simpler
-//     custom boundary process in AmSelG4
+//     custom boundary process in PixSimG4
 //
 // Parameters relating to the physics in this constructor can be set
 // in the Utilities/LArParameters service.
@@ -38,9 +38,9 @@
 // ********************************************************************
 //
 
-#include "amselsim/LArG4/OpticalPhysics.hh"
-#include "amselsim/LArG4/CustomPhysicsFactory.hh"
-#include "amselsim/LArG4/OpBoundaryProcessSimple.hh"
+#include "pixsim/LArG4/OpticalPhysics.hh"
+#include "pixsim/LArG4/CustomPhysicsFactory.hh"
+#include "pixsim/LArG4/OpBoundaryProcessSimple.hh"
 
 #include "lardata/DetectorInfoServices/LArPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
@@ -105,7 +105,7 @@
 
 //Register optical physics in custom physics list
 
-namespace amselg4 {
+namespace pixsimg4 {
 
   CustomPhysicsFactory<OpticalPhysics> optical_factory("Optical");
 

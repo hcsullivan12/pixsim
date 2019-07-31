@@ -10,7 +10,7 @@
 
 #include "fhiclcpp/ParameterSet.h"
 #include "art/Framework/Services/Registry/ServiceMacros.h"
-#include "amselsim/Geometry/DetectorGeometry.h"
+#include "pixsim/Geometry/DetectorGeometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
 
 namespace geo{

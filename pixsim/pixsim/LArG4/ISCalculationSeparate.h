@@ -13,12 +13,12 @@
 
 #include "Geant4/G4EmSaturation.hh"
 
-#include "amselsim/LArG4/ISCalculation.h"
+#include "pixsim/LArG4/ISCalculation.h"
 
 // forward declaration
 namespace CLHEP { class HepRandomEngine; }
 
-namespace amselg4 {
+namespace pixsimg4 {
 
  class ISCalculationSeparate : public ISCalculation {
 

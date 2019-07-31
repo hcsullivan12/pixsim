@@ -10,7 +10,7 @@
 
 #include <cstring>
 
-#include "amselsim/LArG4/ISCalculation.h"
+#include "pixsim/LArG4/ISCalculation.h"
 
 #include "Geant4/G4Step.hh"
 
@@ -19,7 +19,7 @@
 
 namespace CLHEP { class HepRandomEngine; }
 
-namespace amselg4 {
+namespace pixsimg4 {
 
   // The Ionization and Scintillation singleton
   class IonizationAndScintillation
@@ -46,7 +46,7 @@ namespace amselg4 {
     IonizationAndScintillation(CLHEP::HepRandomEngine& engine);
     ~IonizationAndScintillation();
 
-    amselg4::ISCalculation* fISCalc;             ///< object to calculate ionization and scintillation
+    pixsimg4::ISCalculation* fISCalc;             ///< object to calculate ionization and scintillation
                                                ///< produced by an energy deposition
     std::string           fISCalculator;       ///< name of calculator to use, NEST or Separate
     G4Step const*         fStep;               ///< pointer to the current G4 step
@@ -65,7 +65,7 @@ namespace amselg4 {
     CLHEP::HepRandomEngine& fEngine;           ///< random engine
   };
 
-} // namespace amselg4
+} // namespace pixsimg4
 
 
 #endif // LARG4_IONIZATIONANDSCINTILLATION

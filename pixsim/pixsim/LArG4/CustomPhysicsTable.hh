@@ -16,7 +16,7 @@
 // for each available physics module, and can provide the list of their names and
 // the constructor for each to the physics list.
 //
-// This means new physics modules can be enabled via the AmSelG4.xml file with no change to
+// This means new physics modules can be enabled via the PixSimG4.xml file with no change to
 // the physics list code
 //
 // See CustomPhysicsFactory.hh and CustomPhysicsFactory.cxx for more details.
@@ -27,13 +27,13 @@
 #define CUSTOMPHYSICSTABLE_hh 1
 
 #ifndef CUSTOMPHYSICSFACTORY_hh
-namespace amselg4 { class CustomPhysicsFactoryBase; }
+namespace pixsimg4 { class CustomPhysicsFactoryBase; }
 #endif
 
 #include "Geant4/G4VPhysicsConstructor.hh"
 
 
-namespace amselg4 {
+namespace pixsimg4 {
   class CustomPhysicsTable
   {
 
@@ -55,7 +55,7 @@ namespace amselg4 {
 
 }
 
-#include "amselsim/LArG4/CustomPhysicsFactory.hh"
+#include "pixsim/LArG4/CustomPhysicsFactory.hh"
 
 #endif
 

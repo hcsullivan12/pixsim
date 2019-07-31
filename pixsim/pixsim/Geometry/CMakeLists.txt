@@ -1,5 +1,5 @@
-art_make_library( LIBRARY_NAME amselsim_Geometry
-                  SOURCE AmSelGeometry.cxx
+art_make_library( LIBRARY_NAME pixsim_Geometry
+                  SOURCE PixSimGeometry.cxx
                   LIBRARIES ${MF_MESSAGELOGGER}
                             ${MF_UTILITIES}
                             ${FHICLCPP}
@@ -8,8 +8,8 @@ art_make_library( LIBRARY_NAME amselsim_Geometry
                             cetlib cetlib_except
 )
 
-simple_plugin( AmSelGeometryService service
-                amselsim_Geometry
+simple_plugin( PixSimGeometryService service
+                pixsim_Geometry
 		${ART_FRAMEWORK_CORE}
 		${ART_FRAMEWORK_IO_SOURCES}
 		${ART_FRAMEWORK_PRINCIPAL}

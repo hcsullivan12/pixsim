@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////
-// DetectorPropertiesServiceAmSel.h
+// DetectorPropertiesServicePixSim.h
 //
 // Service interface for DetectorProperties functions
 //
@@ -9,7 +9,7 @@
 #ifndef DETECTORPROPERTIESSERVICEAMSEL_H
 #define DETECTORPROPERTIESSERVICEAMSEL_H
 
-#include "amselsim/Services/DetectorPropertiesAmSel.h"
+#include "pixsim/Services/DetectorPropertiesPixSim.h"
 
 #include "fhiclcpp/ParameterSet.h"
 #include "fhiclcpp/types/Atom.h"
@@ -24,19 +24,19 @@
 namespace ldp{
   
   /**
-   * @brief "AmSel" implementation of DetectorProperties service
+   * @brief "PixSim" implementation of DetectorProperties service
    * 
-   * This class wraps DetectorPropertiesAmSel provider into a art service.
+   * This class wraps DetectorPropertiesPixSim provider into a art service.
    * It delivers the provider via the standard interface:
    *     
    *     detinfo::DetectorProperties const* detprop
-   *       = art::ServiceHandle<detinfo::DetectorPropertiesAmSel>()
+   *       = art::ServiceHandle<detinfo::DetectorPropertiesPixSim>()
    *       ->provider();
    *     
    * or, using the standard interface in "CoreUtils/ServiceUtil.h":
    *     
    *     auto const* detprop
-   *       = lar::providerFrom<detinfo::DetectorPropertiesAmSel>();
+   *       = lar::providerFrom<detinfo::DetectorPropertiesPixSim>();
    *     
    * In addition to the functionality of the provider, this service allows
    * to read the configuration from the input file, inherited from a previous
@@ -54,7 +54,7 @@ namespace ldp{
    * 
    */
   
-  class DetectorPropertiesServiceAmSel : public detinfo::DetectorPropertiesService {
+  class DetectorPropertiesServicePixSim : public detinfo::DetectorPropertiesService {
 
     public:
       
@@ -70,7 +70,7 @@ namespace ldp{
         };
         
         // provider configuration
-        ldp::DetectorPropertiesAmSel::Configuration_t ProviderConfiguration;
+        ldp::DetectorPropertiesPixSim::Configuration_t ProviderConfiguration;
         
       }; // ServiceConfiguration_t
       
@@ -78,7 +78,7 @@ namespace ldp{
       // this enables art to print the configuration help:
       using Parameters = art::ServiceTable<ServiceConfiguration_t>;
       
-      DetectorPropertiesServiceAmSel(fhicl::ParameterSet const& pset,
+      DetectorPropertiesServicePixSim(fhicl::ParameterSet const& pset,
 				art::ActivityRegistry& reg);
 
       virtual void   reconfigure(fhicl::ParameterSet const& pset) override;
@@ -90,17 +90,17 @@ namespace ldp{
       
     private:
 
-      std::unique_ptr<ldp::DetectorPropertiesAmSel> fProp;
+      std::unique_ptr<ldp::DetectorPropertiesPixSim> fProp;
       fhicl::ParameterSet   fPS;       ///< Original parameter set.
       
       bool fInheritNumberTimeSamples; ///< Flag saying whether to inherit NumberTimeSamples
       
-      bool isDetectorPropertiesServiceAmSel(const fhicl::ParameterSet& ps) const;
+      bool isDetectorPropertiesServicePixSim(const fhicl::ParameterSet& ps) const;
 
       bool fUseDatabaseForMC;
       bool fGotElectronLifetimeFromDB;
       
     }; // class DetectorPropertiesService
 } //namespace detinfo
-DECLARE_ART_SERVICE_INTERFACE_IMPL(ldp::DetectorPropertiesServiceAmSel, detinfo::DetectorPropertiesService, LEGACY)
+DECLARE_ART_SERVICE_INTERFACE_IMPL(ldp::DetectorPropertiesServicePixSim, detinfo::DetectorPropertiesService, LEGACY)
 #endif // DETECTORPROPERTIESSERVICEAMSEL_H

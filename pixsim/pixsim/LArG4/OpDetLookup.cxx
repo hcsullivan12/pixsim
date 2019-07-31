@@ -11,12 +11,12 @@
 //
 
 
-#include "amselsim/LArG4/OpDetLookup.h"
+#include "pixsim/LArG4/OpDetLookup.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
-#include "amselsim/Geometry/DetectorGeometryService.h"
+#include "pixsim/Geometry/DetectorGeometryService.h"
 
-namespace amselg4 {
+namespace pixsimg4 {
   OpDetLookup * TheOpDetLookup;
 
   //--------------------------------------------------

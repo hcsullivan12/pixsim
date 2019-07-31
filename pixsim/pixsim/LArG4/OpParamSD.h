@@ -30,7 +30,7 @@
 
 #include "Geant4/G4VSensitiveDetector.hh"
 #include "lardataobj/Simulation/sim.h"
-#include "amselsim/LArG4/OpParamAction.h"
+#include "pixsim/LArG4/OpParamAction.h"
 
 
 // Geant4 includes
@@ -50,7 +50,7 @@ namespace sim{
   class SimPhotonsCollection;
 }
 
-namespace amselg4 {
+namespace pixsimg4 {
 
   class OpDetLookup;
   class OpDetPhotonTable;

@@ -13,7 +13,7 @@
 ///
 /// 25-Feb-2009 WGS: Revised for FMWK/LArSoft
 
-#include "amselsim/LArG4/VisualizationAction.h"
+#include "pixsim/LArG4/VisualizationAction.h"
 #include "larsim/Simulation/LArG4Parameters.h"
 
 #include "Geant4/G4Run.hh"
@@ -28,7 +28,7 @@
 #include <cmath>
 #include <cstring>
 
-namespace amselg4 {
+namespace pixsimg4 {
 
   VisualizationAction::VisualizationAction()
   {
@@ -103,4 +103,4 @@ namespace amselg4 {
 
 
 
-} // namespace AmSelG4
+} // namespace PixSimG4

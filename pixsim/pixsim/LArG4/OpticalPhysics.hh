@@ -1,4 +1,4 @@
-// Modified for AmSelG4 by Ben Jones, MIT, Sept 2009
+// Modified for PixSimG4 by Ben Jones, MIT, Sept 2009
 //
 // This class is based upon the default Geant4 optical physics constructor.
 // However, for optical physics in LArSoft:
@@ -6,7 +6,7 @@
 // - Cerenkov light can be enabled or disabled as required
 //
 // - The default geant4 reflection process is swapped for a simpler
-//     custom boundary process in AmSelG4
+//     custom boundary process in PixSimG4
 //
 // Parameters relating to the physics in this constructor can be set
 // in the Utilities/LArParameters service.
@@ -74,7 +74,7 @@ class G4OpRayleigh;
   #pragma clang diagnostic ignored "-Wunused-private-field"
 #endif
 
-namespace amselg4 {
+namespace pixsimg4 {
 
   class OpBoundaryProcessSimple;
 

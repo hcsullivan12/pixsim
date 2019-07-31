@@ -12,9 +12,4 @@ pixsim_simpixel:
  NoiseSigma:         2     
 }
 
-pixsim_photonprojection:
-{
- module_type:        "PhotonProjection"
-}
-
 END_PROLOG

@@ -7,12 +7,12 @@
 
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
-#include "amselsim/LArG4/CustomPhysicsTable.hh"
-#include "amselsim/LArG4/CustomPhysicsFactory.hh"
+#include "pixsim/LArG4/CustomPhysicsTable.hh"
+#include "pixsim/LArG4/CustomPhysicsFactory.hh"
 
 #include "Geant4/G4VPhysicsConstructor.hh"
 
-namespace amselg4 {
+namespace pixsimg4 {
 
   static CustomPhysicsTable * TheCustomPhysicsTable;
 

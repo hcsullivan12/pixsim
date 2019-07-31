@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////
-/// \file  AmSelG4_module.cc
+/// \file  PixSimG4_module.cc
 /// \brief Use Geant4 to run the LArSoft detector simulation
 ///
 /// \author  seligman@nevis.columbia.edu
@@ -46,19 +46,19 @@
 #include "nurandom/RandomUtils/NuRandomService.h"
 
 // LArSoft Includes
-#include "amselsim/LArG4/LArVoxelReadoutGeometry.h"
-#include "amselsim/LArG4/PhysicsList.h"
-#include "amselsim/LArG4/ParticleListAction.h"
-#include "amselsim/LArG4/G4BadIdeaAction.h"
-#include "amselsim/LArG4/IonizationAndScintillationAction.h"
-#include "amselsim/LArG4/OpDetSensitiveDetector.h"
-#include "amselsim/LArG4/OpDetReadoutGeometry.h"
-#include "amselsim/LArG4/LArStackingAction.h"
-#include "amselsim/LArG4/LArVoxelReadout.h"
-#include "amselsim/LArG4/MaterialPropertyLoader.h"
-#include "amselsim/LArG4/OpDetPhotonTable.h"
-#include "amselsim/LArG4/AuxDetReadoutGeometry.h"
-#include "amselsim/LArG4/AuxDetReadout.h"
+#include "pixsim/LArG4/LArVoxelReadoutGeometry.h"
+#include "pixsim/LArG4/PhysicsList.h"
+#include "pixsim/LArG4/ParticleListAction.h"
+#include "pixsim/LArG4/G4BadIdeaAction.h"
+#include "pixsim/LArG4/IonizationAndScintillationAction.h"
+#include "pixsim/LArG4/OpDetSensitiveDetector.h"
+#include "pixsim/LArG4/OpDetReadoutGeometry.h"
+#include "pixsim/LArG4/LArStackingAction.h"
+#include "pixsim/LArG4/LArVoxelReadout.h"
+#include "pixsim/LArG4/MaterialPropertyLoader.h"
+#include "pixsim/LArG4/OpDetPhotonTable.h"
+#include "pixsim/LArG4/AuxDetReadoutGeometry.h"
+#include "pixsim/LArG4/AuxDetReadout.h"
 #include "larcorealg/CoreUtils/ParticleFilters.h" // util::PositionInVolumeFilter
 #include "larsim/PhotonPropagation/PhotonVisibilityService.h"
 #include "lardataalg/MCDumpers/MCDumpers.h" // sim::dump namespace
@@ -114,7 +114,7 @@ class G4VisExecutive;
 #endif
 
 ///Geant4 interface
-namespace amselg4 {
+namespace pixsimg4 {
 
   // Forward declarations within namespace.
   class LArVoxelListAction;
@@ -135,9 +135,9 @@ namespace amselg4 {
    *
    * The module allows two operation modes:
    * -# process specific generators: the label of the generator modules to be
-   *   processed is specified explicitly in `AmSelG4` configuration
+   *   processed is specified explicitly in `PixSimG4` configuration
    * -# process all truth information generated so far: no generator is specified
-   *   in the `AmSelG4` module configuration, and the module will process all
+   *   in the `PixSimG4` module configuration, and the module will process all
    *   data products of type `std::vector<simb::MCTruth>`, in a non-specified
    *   order
    *
@@ -145,13 +145,13 @@ namespace amselg4 {
    * The interface with Geant4 is via a helper class provided by _nutools_.
    * Only the particles in the truth record which have status code
    * (`simb::MCParticle::StatusCode()`) equal to `1` are processed.
-   * These particles are called, in `AmSelG4` jargon, _primaries_.
+   * These particles are called, in `PixSimG4` jargon, _primaries_.
    *
    *
    * Output
    * -------
    *
-   * The `AmSelG4` module produces:
+   * The `PixSimG4` module produces:
    * * a collection of `sim::SimChannel`: each `sim::SimChannel` represents the
    *   set of energy depositions in liquid argon which drifted and were observed
    *   on a certain channel; it includes physics effects like attenuation,
@@ -177,7 +177,7 @@ namespace amselg4 {
    *
    * * all and the particles in the truth record (`simb::MCTruth`) which have
    *   status code (`simb::MCParticle::StatusCode()`) equal to `1` are passed
-   *   to Geant4. These particles are called, in `AmSelG4` jargon, _primaries_.
+   *   to Geant4. These particles are called, in `PixSimG4` jargon, _primaries_.
    *   The interface with Geant4 is via a helper class provided by _nutools_.
    * * normally, information about each particle that Geant4 propagates (which
    *   Geant4 calls _tracks_), primary or not, is saved as an individual
@@ -187,7 +187,7 @@ namespace amselg4 {
    *   used to track all the deposition from a particle, or to backtrack the
    *   particle responsible of a deposition (but see below...).
    *   Note that the stored track ID may be different than the one Geant4 used
-   *   (and, in particular, it's guaranteed to be unique within a `sim::AmSelG4`
+   *   (and, in particular, it's guaranteed to be unique within a `sim::PixSimG4`
    *   instance output).
    * * there are options (some set in `sim::LArG4Parameters` service) which
    *   allow for Geant4 tracks not to be saved as `simb::MCParticle` (e.g.
@@ -202,7 +202,7 @@ namespace amselg4 {
    * Timing
    * -------
    *
-   * The `AmSelG4` module produces `sim::SimChannel` objects from generated
+   * The `PixSimG4` module produces `sim::SimChannel` objects from generated
    * `simb::MCParticle`. Each particle ("primary") is assigned the time taken
    * from its vertex (a 4-vector), which is expected to be represented in
    * nanoseconds.
@@ -231,7 +231,7 @@ namespace amselg4 {
    * Configuration parameters
    * -------------------------
    *
-   * - *G4PhysListName* (string, default: `"amselg4::PhysicsList"`):
+   * - *G4PhysListName* (string, default: `"pixsimg4::PhysicsList"`):
    *     whether to use the G4 overlap checker, which catches different issues than ROOT
    * - *CheckOverlaps* (bool, default: `false`):
    *     whether to use the G4 overlap checker
@@ -258,7 +258,7 @@ namespace amselg4 {
    * - *ChargeRecoveryMargin* (double, default: `0`): sets the maximum
    *     distance from a plane for the wire charge recovery to occur, in
    *     centimeters; for details on how it works, see
-   *     `amselg4::LArVoxelReadout::SetOffPlaneChargeRecoveryMargin()`. A value of
+   *     `pixsimg4::LArVoxelReadout::SetOffPlaneChargeRecoveryMargin()`. A value of
    *     `0` effectively disables this feature. All TPCs will have the same
    *     margin applied.
    *
@@ -272,11 +272,11 @@ namespace amselg4 {
    * Two models are supported for the simulation of (scintillation) light
    * crossing detector surfaces:
    * -# the standard one from GEANT4, implemented in `G4OpBoundaryProcess`
-   * -# a simplified one, implemented in `amselg4::OpBoundaryProcessSimple`
+   * -# a simplified one, implemented in `pixsimg4::OpBoundaryProcessSimple`
    *
    * The model is chosen according to the value of
    * `detinfo::DetectorProperties::SimpleBoundary()`, and the choice is
-   * currently exerted by `amselg4::OpticalPhysics`.
+   * currently exerted by `pixsimg4::OpticalPhysics`.
    *
    * The simplified model is faster and simpler: it only deals with absorption
    * and reflection (both specular and diffues).
@@ -289,12 +289,12 @@ namespace amselg4 {
    *
    *
    */
-  class AmSelG4 : public art::EDProducer{
+  class PixSimG4 : public art::EDProducer{
   public:
 
     /// Standard constructor and destructor for an FMWK module.
-    explicit AmSelG4(fhicl::ParameterSet const& pset);
-    virtual ~AmSelG4();
+    explicit PixSimG4(fhicl::ParameterSet const& pset);
+    virtual ~PixSimG4();
 
     /// The main routine of this module: Fetch the primary particles
     /// from the event, simulate their evolution in the detctor, and
@@ -305,8 +305,8 @@ namespace amselg4 {
 
   private:
     g4b::G4Helper*             fG4Help;             ///< G4 interface object
-    amselg4::LArVoxelListAction* flarVoxelListAction; ///< Geant4 user action to accumulate LAr voxel information.
-    amselg4::ParticleListAction* fparticleListAction; ///< Geant4 user action to particle information.
+    pixsimg4::LArVoxelListAction* flarVoxelListAction; ///< Geant4 user action to accumulate LAr voxel information.
+    pixsimg4::ParticleListAction* fparticleListAction; ///< Geant4 user action to particle information.
 
     std::string                fG4PhysListName;     ///< predefined physics list to use if not making a custom one
     std::string                fG4MacroPath;        ///< directory path for Geant4 macro file to be
@@ -332,18 +332,18 @@ namespace amselg4 {
 
   };
 
-} // namespace AmSelG4
+} // namespace PixSimG4
 
-namespace amselg4 {
+namespace pixsimg4 {
 
   //----------------------------------------------------------------------
   // Constructor
-  AmSelG4::AmSelG4(fhicl::ParameterSet const& pset)
+  PixSimG4::PixSimG4(fhicl::ParameterSet const& pset)
     : art::EDProducer{pset}
     , fG4Help                (0)
     , flarVoxelListAction    (0)
     , fparticleListAction    (0)
-    , fG4PhysListName        (pset.get< std::string >("G4PhysListName","amselg4::PhysicsList"))
+    , fG4PhysListName        (pset.get< std::string >("G4PhysListName","pixsimg4::PhysicsList"))
     , fCheckOverlaps         (pset.get< bool        >("CheckOverlaps",false)                )
     , fdumpParticleList      (pset.get< bool        >("DumpParticleList",false)             )
     , fdumpSimChannels       (pset.get< bool        >("DumpSimChannels", false)             )
@@ -355,12 +355,12 @@ namespace amselg4 {
     , fEngine(art::ServiceHandle<rndm::NuRandomService>{}
                 ->createEngine(*this, "HepJamesRandom", "propagation", pset, "PropagationSeed"))
   {
-    MF_LOG_DEBUG("AmSelG4") << "Debug: AmSelG4()";
+    MF_LOG_DEBUG("PixSimG4") << "Debug: PixSimG4()";
     art::ServiceHandle<art::RandomNumberGenerator const> rng;
 
     if (pset.has_key("Seed")) {
       throw art::Exception(art::errors::Configuration)
-        << "The configuration of AmSelG4 module has the discontinued 'Seed' parameter.\n"
+        << "The configuration of PixSimG4 module has the discontinued 'Seed' parameter.\n"
         "Seeds are now controlled by two parameters: 'GEANTSeed' and 'PropagationSeed'.";
     }
     // setup the random number service for Geant4, the "G4Engine" label is a
@@ -432,13 +432,13 @@ namespace amselg4 {
 
   //----------------------------------------------------------------------
   // Destructor
-  AmSelG4::~AmSelG4()
+  PixSimG4::~PixSimG4()
   {
     if(fG4Help) delete fG4Help;
   }
 
   //----------------------------------------------------------------------
-  void AmSelG4::beginJob()
+  void PixSimG4::beginJob()
   {
     auto const* geom = art::ServiceHandle<geo::DetectorGeometryService>()->provider();
 
@@ -448,7 +448,7 @@ namespace amselg4 {
     // Intialize G4 physics and primary generator action
     fG4Help->InitPhysics();
     // Get the logical volume store and assign material properties
-    amselg4::MaterialPropertyLoader* MPL = new amselg4::MaterialPropertyLoader();
+    pixsimg4::MaterialPropertyLoader* MPL = new pixsimg4::MaterialPropertyLoader();
     MPL->GetPropertiesFromServices();
     MPL->UpdateGeometry(G4LogicalVolumeStore::GetInstance());
     // Tell the detector about the parallel LAr voxel geometry.
@@ -487,16 +487,16 @@ namespace amselg4 {
     // pointer and jump through hoops to change it
     // 08-Apr-2014 WGS: It appears that with the shift to Geant 4.9.6 or
     // above, there's no longer any need for the "Bad Idea Action" fix.
-    //    amselg4::G4BadIdeaAction *bia = new amselg4::G4BadIdeaAction(fSmartStacking);
+    //    pixsimg4::G4BadIdeaAction *bia = new pixsimg4::G4BadIdeaAction(fSmartStacking);
     //    uaManager->AddAndAdoptAction(bia);
 
     // remove IonizationAndScintillationAction for now as we are ensuring
     // the Reset for each G4Step within the G4SensitiveVolumes
-    //amselg4::IonizationAndScintillationAction *iasa = new amselg4::IonizationAndScintillationAction();
+    //pixsimg4::IonizationAndScintillationAction *iasa = new pixsimg4::IonizationAndScintillationAction();
     //uaManager->AddAndAdoptAction(iasa);
     // User-action class for accumulating particles and trajectories
     // produced in the detector.
-    fparticleListAction = new amselg4::ParticleListAction(lgp->ParticleKineticEnergyCut(),
+    fparticleListAction = new pixsimg4::ParticleListAction(lgp->ParticleKineticEnergyCut(),
                                                         lgp->StoreTrajectories(),
                                                         lgp->KeepEMShowerDaughters());
     uaManager->AddAndAdoptAction(fparticleListAction);
@@ -513,7 +513,7 @@ namespace amselg4 {
   }
 
   //----------------------------------------------------------------------
-  void AmSelG4::beginRun(art::Run& run)
+  void PixSimG4::beginRun(art::Run& run)
   {
     // prepare the filter object (null if no filtering)
 
@@ -523,7 +523,7 @@ namespace amselg4 {
   }
 
   //----------------------------------------------------------------------
-  std::unique_ptr<util::PositionInVolumeFilter> AmSelG4::CreateParticleVolumeFilter
+  std::unique_ptr<util::PositionInVolumeFilter> PixSimG4::CreateParticleVolumeFilter
     (std::set<std::string> const& vol_names) const
   {
 
@@ -537,9 +537,9 @@ namespace amselg4 {
   } // CreateParticleVolumeFilter()
 
   //----------------------------------------------------------------------
-  void AmSelG4::produce(art::Event& evt)
+  void PixSimG4::produce(art::Event& evt)
   {
-    MF_LOG_DEBUG("AmSelG4") << "produce()";
+    MF_LOG_DEBUG("PixSimG4") << "produce()";
 
     // loop over the lists and put the particles and voxels into the event as collections
     std::unique_ptr< std::vector<sim::SimChannel>  >               scCol                      (new std::vector<sim::SimChannel>);
@@ -593,7 +593,7 @@ namespace amselg4 {
       for(size_t m = 0; m < mclistHandle->size(); ++m){
         art::Ptr<simb::MCTruth> mct(mclistHandle, m);
 
-        MF_LOG_DEBUG("AmSelG4") << *(mct.get());
+        MF_LOG_DEBUG("PixSimG4") << *(mct.get());
 
         // The following tells Geant4 to track the particles in this interaction.
         fG4Help->G4Run(mct);
@@ -636,7 +636,7 @@ namespace amselg4 {
 
         // Has the user request a detailed dump of the output objects?
         if (fdumpParticleList){
-          mf::LogInfo("AmSelG4") << "Dump sim::ParticleList; size()="
+          mf::LogInfo("PixSimG4") << "Dump sim::ParticleList; size()="
                                << particleList.size() << "\n"
                                << particleList;
         }
@@ -742,7 +742,7 @@ namespace amselg4 {
           // the name "LArVoxelSD" does not exist.
           if (!sd)
           {
-            throw cet::exception("AmSelG4") << "Sensitive detector for cryostat "
+            throw cet::exception("PixSimG4") << "Sensitive detector for cryostat "
                                             << c << " TPC " << t << " not found (neither '"
                                             << sstr.str() << "' nor '" << name << "' exist)\n";
           }
@@ -754,7 +754,7 @@ namespace amselg4 {
           // it's not a LArVoxelReadout object.
           if (!larVoxelReadout)
           {
-            throw cet::exception("AmSelG4") << "Sensitive detector '"
+            throw cet::exception("PixSimG4") << "Sensitive detector '"
                                             << sd->GetName()
                                             << "' is not a LArVoxelReadout object\n";
           }
@@ -763,7 +763,7 @@ namespace amselg4 {
           LArVoxelReadout::ChannelMap_t &channels = larVoxelReadout->GetSimChannelMap(c, t);
           if (!channels.empty())
           {
-            MF_LOG_DEBUG("AmSelG4") << "now put " << channels.size() << " SimChannels"
+            MF_LOG_DEBUG("PixSimG4") << "now put " << channels.size() << " SimChannels"
                                                                         " from C="
                                     << c << " T=" << t << " into the event";
           }
@@ -838,15 +838,15 @@ namespace amselg4 {
         name << "AuxDetSD_AuxDet" << a << "_" << sv;
         G4VSensitiveDetector* sd = sdManager->FindSensitiveDetector(name.str().c_str());
         if ( !sd ){
-          throw cet::exception("AmSelG4") << "Sensitive detector '"
+          throw cet::exception("PixSimG4") << "Sensitive detector '"
           << name.str()
           << "' does not exist\n";
         }
 
           // Convert the G4VSensitiveDetector* to a AuxDetReadout*.
-        amselg4::AuxDetReadout *auxDetReadout = dynamic_cast<amselg4::AuxDetReadout*>(sd);
+        pixsimg4::AuxDetReadout *auxDetReadout = dynamic_cast<pixsimg4::AuxDetReadout*>(sd);
 
-        MF_LOG_DEBUG("AmSelG4") << "now put the AuxDetSimTracks in the event";
+        MF_LOG_DEBUG("PixSimG4") << "now put the AuxDetSimTracks in the event";
 
         const sim::AuxDetSimChannel adsc = auxDetReadout->GetAuxDetSimChannel();
         adCol->push_back(adsc);
@@ -855,7 +855,7 @@ namespace amselg4 {
 
     } // Loop over AuxDets
 
-    mf::LogInfo("AmSelG4")
+    mf::LogInfo("PixSimG4")
       << "Geant4 simulated " << nGeneratedParticles << " MC particles, we keep "
       << partCol->size() << " .";
 
@@ -899,15 +899,15 @@ namespace amselg4 {
       evt.put(std::move(edepCol_Other),"Other");
     }
     return;
-  } // AmSelG4::produce()
+  } // PixSimG4::produce()
 
-} // namespace AmSelG4
+} // namespace PixSimG4
 
-namespace amselg4 {
+namespace pixsimg4 {
 
-  DEFINE_ART_MODULE(AmSelG4)
+  DEFINE_ART_MODULE(PixSimG4)
 
-} // namespace AmSelG4
+} // namespace PixSimG4
 #if defined __clang__
   #pragma clang diagnostic pop
 #endif

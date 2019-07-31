@@ -24,8 +24,8 @@
 // ********************************************************************
 //
 
-#include "amselsim/LArG4/LArStackingAction.h"
-#include "amselsim/Geometry/AmSelGeometryService.h"
+#include "pixsim/LArG4/LArStackingAction.h"
+#include "pixsim/Geometry/PixSimGeometryService.h"
 #include "larcore/Geometry/Geometry.h"
 
 #include "Geant4/G4SDManager.hh"

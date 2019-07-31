@@ -1,6 +1,6 @@
 /**
- * @file AmSelGeometry.cxx
- * @brief Interface to AmSel geometry information.
+ * @file PixSimGeometry.cxx
+ * @brief Interface to pixel geometry information.
  * 
  * There is a question of how to handle pixels. For even small active
  * volumes, the number of pixels is 10s of 1000s. Therefore, there 
@@ -11,7 +11,7 @@
  * @author H. Sullivan (hsulliva@fnal.gov)
  */
 
-#include "amselsim/Geometry/AmSelGeometry.h"
+#include "pixsim/Geometry/PixSimGeometry.h"
 
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "larcorealg/CoreUtils/ProviderUtil.h" // lar::IgnorableProviderConfigKeys()
@@ -20,14 +20,14 @@
 #include "TGeoBBox.h"
 #include "TGeoVolume.h"
 
-namespace amselgeo
+namespace pixgeo
 {
 
-AmSelGeometry::AmSelGeometry()
+PixSimGeometry::PixSimGeometry()
 {}
 
 //--------------------------------------------------------------------
-AmSelGeometry::AmSelGeometry(fhicl::ParameterSet const& pset,
+PixSimGeometry::PixSimGeometry(fhicl::ParameterSet const& pset,
                              std::set<std::string> const& ignore_params)
  : fDetectorName("none"),
    fLArTPCVolName("none"),
@@ -44,7 +44,7 @@ AmSelGeometry::AmSelGeometry(fhicl::ParameterSet const& pset,
 }
 
 //--------------------------------------------------------------------
-void AmSelGeometry::ValidateAndConfigure(
+void PixSimGeometry::ValidateAndConfigure(
     fhicl::ParameterSet const& p,
     std::set<std::string> const& ignore_params /* = {} */) 
 {
@@ -52,8 +52,8 @@ void AmSelGeometry::ValidateAndConfigure(
 }
 
 //--------------------------------------------------------------------
-AmSelGeometry::Configuration_t
-AmSelGeometry::ValidateConfiguration(
+PixSimGeometry::Configuration_t
+PixSimGeometry::ValidateConfiguration(
     fhicl::ParameterSet const& p,
     std::set<std::string> const& ignore_params /* = {} */) 
 {
@@ -65,7 +65,7 @@ AmSelGeometry::ValidateConfiguration(
 }
 
 //--------------------------------------------------------------------
-void AmSelGeometry::Configure(Configuration_t const& config) 
+void PixSimGeometry::Configure(Configuration_t const& config) 
 {
   fDetectorName      = config.DetectorName();
   fGDMLPath          = config.GDML();
@@ -77,14 +77,14 @@ void AmSelGeometry::Configure(Configuration_t const& config)
 }
 
 //--------------------------------------------------------------------
-void AmSelGeometry::Initialize()
+void PixSimGeometry::Initialize()
 {
   // We first need to validate the GDML file path
   cet::search_path sp("FW_SEARCH_PATH");
   std::string GDMLFilePath;
   if( !sp.find_file(fGDMLPath, GDMLFilePath) ) 
   {
-    throw cet::exception("AmSelGeometry")
+    throw cet::exception("PixSimGeometry")
       << "Can't find geometry file '" << fGDMLPath << "'!\n";
   }
 
@@ -103,23 +103,23 @@ void AmSelGeometry::Initialize()
   LookAtNode(topNode, path);
  
   // Force the gdml to have the optical and active volumes 
-  if (fOpDetVolName.find("volOpDetSensitive") == std::string::npos) throw cet::exception("AmSelGeometry") << "Couldn't find optical detector volume!\n";
-  if (fLArTPCVolName.find("volLArActive") == std::string::npos)     throw cet::exception("AmSelGeometry") << "Couldn't find LAr active volume!\n";
-  if (!fPixelPlane)                                                 throw cet::exception("AmSelGeometry") << "Couldn't find pixel plane volume!\n";
+  if (fOpDetVolName.find("volOpDetSensitive") == std::string::npos) throw cet::exception("PixSimGeometry") << "Couldn't find optical detector volume!\n";
+  if (fLArTPCVolName.find("volLArActive") == std::string::npos)     throw cet::exception("PixSimGeometry") << "Couldn't find LAr active volume!\n";
+  if (!fPixelPlane)                                                 throw cet::exception("PixSimGeometry") << "Couldn't find pixel plane volume!\n";
 
   // Load simplified geometry
   if (fUseSimpleGeometry) 
   {
     std::cout <<"\n";
-    mf::LogInfo("AmSelGeometry")<<"Loading simple geometry\n";
+    mf::LogInfo("PixSimGeometry")<<"Loading simple geometry\n";
     LoadSimpleGeometry();
   }
   std::cout << "\n";
-  mf::LogInfo("AmSelGeometry")<<"Initialized geometry with " << fNPixels << " pixels\n";
+  mf::LogInfo("PixSimGeometry")<<"Initialized geometry with " << fNPixels << " pixels\n";
 }
 
 //--------------------------------------------------------------------
-void AmSelGeometry::LookAtNode(TGeoNode const* currentNode, std::string const& currentPath) 
+void PixSimGeometry::LookAtNode(TGeoNode const* currentNode, std::string const& currentPath) 
 {
   // Get the volume of this node
   TGeoVolume* nodeVol = currentNode->GetVolume();
@@ -161,7 +161,7 @@ void AmSelGeometry::LookAtNode(TGeoNode const* currentNode, std::string const& c
 
 
 //--------------------------------------------------------------------
-void AmSelGeometry::LoadSimpleGeometry()
+void PixSimGeometry::LoadSimpleGeometry()
 {
   fSimpleGeoY.clear();
   fSimpleGeoZ.clear();
@@ -206,7 +206,7 @@ void AmSelGeometry::LoadSimpleGeometry()
 }
 
 //--------------------------------------------------------------------
-void AmSelGeometry::GetOpDetCenter(double* xyz) const
+void PixSimGeometry::GetOpDetCenter(double* xyz) const
 {
   std::string planeNodePath = *std::find_if(fNodePaths.begin(), fNodePaths.end(), [](std::string const& s) {return s.find("PixelPlane") != std::string::npos;}); 
   gGeoManager->cd(planeNodePath.c_str());
@@ -217,7 +217,7 @@ void AmSelGeometry::GetOpDetCenter(double* xyz) const
 }
 
 //--------------------------------------------------------------------
-int AmSelGeometry::NearestPixelID(geo::Point_t const& point) const
+int PixSimGeometry::NearestPixelID(geo::Point_t const& point) const
 {
   // Check for simplified geometry
   if (fUseSimpleGeometry) return FindSimpleID(point);
@@ -237,7 +237,7 @@ int AmSelGeometry::NearestPixelID(geo::Point_t const& point) const
 // \warning Assumes containers are already sorted in increasing Z and 
 //          decreasing y.
 //
-int AmSelGeometry::FindSimpleID(geo::Point_t const& point) const
+int PixSimGeometry::FindSimpleID(geo::Point_t const& point) const
 {
   // Find the first column closest to our test point
   float testZ        = point.z();
@@ -266,7 +266,7 @@ int AmSelGeometry::FindSimpleID(geo::Point_t const& point) const
 }
 
 //--------------------------------------------------------------------
-std::string AmSelGeometry::VolumeName(geo::Point_t const& point) const
+std::string PixSimGeometry::VolumeName(geo::Point_t const& point) const
 {
   // check that the given point is in the World volume at least
   TGeoVolume const*volWorld = gGeoManager->FindVolumeFast("volWorld");
@@ -277,7 +277,7 @@ std::string AmSelGeometry::VolumeName(geo::Point_t const& point) const
      std::abs(point.y()) > halfheight ||
      std::abs(point.z()) > halflength
      ){
-    mf::LogWarning("AmSelGeometry") << "point (" << point.x() << ","
+    mf::LogWarning("PixSimGeometry") << "point (" << point.x() << ","
                                     << point.y() << "," << point.z() << ") "
                                     << "is not inside the world volume "
                                     << " half width = " << halfwidth

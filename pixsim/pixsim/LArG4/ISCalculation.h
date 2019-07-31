@@ -10,7 +10,7 @@
 #include "Geant4/G4Step.hh"
 #include "Geant4/G4UserLimits.hh"
 
-namespace amselg4{
+namespace pixsimg4{
 
  class ISCalculation{
 

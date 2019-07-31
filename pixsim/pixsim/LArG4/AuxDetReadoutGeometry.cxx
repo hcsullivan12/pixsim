@@ -10,8 +10,8 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 // LArSoft includes
-#include "amselsim/LArG4/AuxDetReadoutGeometry.h"
-#include "amselsim/LArG4/AuxDetReadout.h"
+#include "pixsim/LArG4/AuxDetReadoutGeometry.h"
+#include "pixsim/LArG4/AuxDetReadout.h"
 
 // G4 includes
 #include "Geant4/G4PVPlacement.hh"
@@ -31,7 +31,7 @@
 
 #include <cmath>
 
-namespace amselg4 {
+namespace pixsimg4 {
 
   // Constructor and destructor.
   AuxDetReadoutGeometry::AuxDetReadoutGeometry(const G4String name)
@@ -88,9 +88,9 @@ namespace amselg4 {
       size_t adNum = 0;
       size_t svNum = 0;
       //fGeo->FindAuxDetSensitiveAtPosition(worldPos, adNum, svNum);
-      //  N.B. This name is expected by code in AmSelG4:
+      //  N.B. This name is expected by code in PixSimG4:
       std::string SDName = "AuxDetSD_AuxDet" + std::to_string(adNum) + "_" + std::to_string(svNum);
-      AuxDetReadout* adReadout = new amselg4::AuxDetReadout(SDName, adNum, svNum);
+      AuxDetReadout* adReadout = new pixsimg4::AuxDetReadout(SDName, adNum, svNum);
 
       MF_LOG_DEBUG("AuxDetReadoutGeometry") << "found" << path[depth]->GetName()
 					 << ", number " << adNum << ":" << svNum;
@@ -143,9 +143,9 @@ namespace amselg4 {
 
       unsigned int adNum;
       //fGeo->PositionToAuxDet(worldPos, adNum);
-      //  N.B. This name is expected by code in AmSelG4:
+      //  N.B. This name is expected by code in PixSimG4:
       std::string SDName = "AuxDetSD_AuxDet" + std::to_string(adNum) + "_0";
-      AuxDetReadout* adReadout = new amselg4::AuxDetReadout(SDName, adNum, 0);
+      AuxDetReadout* adReadout = new pixsimg4::AuxDetReadout(SDName, adNum, 0);
 
       MF_LOG_DEBUG("AuxDetReadoutGeometry") << "found" << path[depth]->GetName()
 					 << ", number " << adNum << ":0";
@@ -182,4 +182,4 @@ return;
   }
 
 
-} // namespace amselg4
+} // namespace pixsimg4

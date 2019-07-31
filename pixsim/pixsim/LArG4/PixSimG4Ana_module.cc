@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////
-/// \file  AmSelG4Ana_module.cc
+/// \file  PixSimG4Ana_module.cc
 /// \brief Use Geant4 to run the LArSoft detector simulation
 ///
 /// \author  seligman@nevis.columbia.edu
@@ -46,13 +46,13 @@ namespace sim{
 }
 
 ///Geant4 interface
-namespace amselg4 {
+namespace pixsimg4 {
 
-  class AmSelG4Ana : public art::EDAnalyzer{
+  class PixSimG4Ana : public art::EDAnalyzer{
   public:
 
     /// Standard constructor and destructor for an FMWK module.
-    explicit AmSelG4Ana(fhicl::ParameterSet const& pset);
+    explicit PixSimG4Ana(fhicl::ParameterSet const& pset);
 
     void analyze (const art::Event& evt);
     void beginJob();
@@ -103,13 +103,13 @@ namespace amselg4 {
     Float_t* fT4DMomentum;
   };
 
-} // namespace amselg4
+} // namespace pixsimg4
 
-namespace amselg4 {
+namespace pixsimg4 {
 
   //-----------------------------------------------------------------------
   // Constructor
-  AmSelG4Ana::AmSelG4Ana(fhicl::ParameterSet const& pset)
+  PixSimG4Ana::PixSimG4Ana(fhicl::ParameterSet const& pset)
     : EDAnalyzer(pset)
     , fG4ModuleLabel{pset.get< std::string >("GeantModuleLabel")}
     , fTruthModuleLabel{pset.get< std::string >("TruthModuleLabel")}
@@ -118,7 +118,7 @@ namespace amselg4 {
   {}
 
   //-----------------------------------------------------------------------
-  void AmSelG4Ana::beginJob()
+  void PixSimG4Ana::beginJob()
   {
     art::ServiceHandle<art::TFileService const> tfs;
     art::ServiceHandle<geo::Geometry const> geo;
@@ -193,7 +193,7 @@ namespace amselg4 {
   }
 
   //-----------------------------------------------------------------------
-  void AmSelG4Ana::analyze(const art::Event& evt)
+  void PixSimG4Ana::analyze(const art::Event& evt)
   {
 
     //get the list of particles from this event
@@ -220,7 +220,7 @@ namespace amselg4 {
 	for(size_t iv = 0; iv < idevec.size(); ++iv){
 	  if(plist.find( idevec[iv].trackID ) == plist.end()
 	     && idevec[iv].trackID != sim::NoParticleId)
-	  mf::LogWarning("AmSelG4Ana") << idevec[iv].trackID << " is not in particle list";
+	  mf::LogWarning("PixSimG4Ana") << idevec[iv].trackID << " is not in particle list";
 	  totalCharge +=idevec[iv].numElectrons;
 	  scCharge += idevec[iv].numElectrons;
 	  totalEnergy +=idevec[iv].energy;
@@ -251,7 +251,7 @@ namespace amselg4 {
       if(pvec[i]->Mother() == pi0loc+1 &&
 	 pi0loc > 0 &&
 	 pvec[i]->PdgCode() == 22){
-	mf::LogInfo("AmSelG4Ana") << pvec[i]->E() << " gamma energy ";
+	mf::LogInfo("PixSimG4Ana") << pvec[i]->E() << " gamma energy ";
 	++numpi0gamma;
       }
 
@@ -336,7 +336,7 @@ namespace amselg4 {
 
     } // end loop on particles in list
     if(numpi0gamma == 2 && pi0loc > 0){
-      mf::LogInfo("AmSelG4Ana") << pvec[pi0loc]->E();
+      mf::LogInfo("PixSimG4Ana") << pvec[pi0loc]->E();
       fPi0Momentum->Fill(pvec[pi0loc]->E());
     }
 
@@ -345,10 +345,10 @@ namespace amselg4 {
 
 
 
-} // namespace amselg4
+} // namespace pixsimg4
 
-namespace amselg4 {
+namespace pixsimg4 {
 
-  DEFINE_ART_MODULE(AmSelG4Ana)
+  DEFINE_ART_MODULE(PixSimG4Ana)
 
-} // namespace AmSelG4
+} // namespace PixSimG4

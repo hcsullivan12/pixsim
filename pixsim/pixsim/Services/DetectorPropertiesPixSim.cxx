@@ -1,13 +1,13 @@
 ////////////////////////////////////////////////////////////////////////
 //
-//  \file DetectorPropertiesAmSel.cxx
+//  \file DetectorPropertiesPixSim.cxx
 //
 // Separation of service from Detector info class:
 // hsulliva@fnal.gov
 //
 ////////////////////////////////////////////////////////////////////////
 
-#include "amselsim/Services/DetectorPropertiesAmSel.h"
+#include "pixsim/Services/DetectorPropertiesPixSim.h"
 
 #include <cassert>
 
@@ -31,14 +31,14 @@ namespace {
 namespace ldp{
 
   //--------------------------------------------------------------------
-  DetectorPropertiesAmSel::DetectorPropertiesAmSel() :
+  DetectorPropertiesPixSim::DetectorPropertiesPixSim() :
     fLP(0), fClocks(0), fGeo(0)
   {
 
   }
   
   //--------------------------------------------------------------------
-  DetectorPropertiesAmSel::DetectorPropertiesAmSel(fhicl::ParameterSet const& pset,
+  DetectorPropertiesPixSim::DetectorPropertiesPixSim(fhicl::ParameterSet const& pset,
 					 const geo::DetectorGeometry* geo,
 					 const detinfo::LArProperties* lp,
 					 const detinfo::DetectorClocks* c,
@@ -57,11 +57,11 @@ namespace ldp{
   }
     
   //--------------------------------------------------------------------
-  DetectorPropertiesAmSel::DetectorPropertiesAmSel(fhicl::ParameterSet const& pset,
+  DetectorPropertiesPixSim::DetectorPropertiesPixSim(fhicl::ParameterSet const& pset,
 					 providers_type providers,
 					 std::set<std::string> ignore_params /* = {} */
 					 ):
-    DetectorPropertiesAmSel(pset,
+    DetectorPropertiesPixSim(pset,
       providers.get<geo::DetectorGeometry>(),
       providers.get<detinfo::LArProperties>(),
       providers.get<detinfo::DetectorClocks>(),
@@ -70,7 +70,7 @@ namespace ldp{
     {}
   
   //--------------------------------------------------------------------
-  bool DetectorPropertiesAmSel::Update(uint64_t t) 
+  bool DetectorPropertiesPixSim::Update(uint64_t t) 
   {
 
     bool retVal = true;
@@ -102,13 +102,13 @@ namespace ldp{
   }
 
   //--------------------------------------------------------------------
-  bool DetectorPropertiesAmSel::UpdateElectronLifetime(uint64_t t) 
+  bool DetectorPropertiesPixSim::UpdateElectronLifetime(uint64_t t) 
   {
 
     std::string tableName = "elifetime";
     nutools::dbi::Table tbl;
     
-    tbl.SetDetector("AmSel");
+    tbl.SetDetector("PixSim");
     tbl.SetTableName(tableName);
     tbl.SetTableType(nutools::dbi::kConditionsTable);
     tbl.SetDataTypeMask(nutools::dbi::kDataOnly);
@@ -147,7 +147,7 @@ namespace ldp{
   }
   
   //--------------------------------------------------------------------
-  bool DetectorPropertiesAmSel::UpdateClocks(const detinfo::DetectorClocks* clks) 
+  bool DetectorPropertiesPixSim::UpdateClocks(const detinfo::DetectorClocks* clks) 
   {
     fClocks = clks;
     
@@ -156,19 +156,19 @@ namespace ldp{
   }
   
   //------------------------------------------------------------
-  double DetectorPropertiesAmSel::ConvertTDCToTicks(double tdc) const
+  double DetectorPropertiesPixSim::ConvertTDCToTicks(double tdc) const
   {
     return fClocks->TPCTDC2Tick(tdc);
   }
   
   //--------------------------------------------------------------
-  double DetectorPropertiesAmSel::ConvertTicksToTDC(double ticks) const
+  double DetectorPropertiesPixSim::ConvertTicksToTDC(double ticks) const
   {
     return fClocks->TPCTick2TDC(ticks);
   }
   
   //--------------------------------------------------------------------
-  void DetectorPropertiesAmSel::Configure(Configuration_t const& config) {
+  void DetectorPropertiesPixSim::Configure(Configuration_t const& config) {
    
     fEfield                     = config.Efield();
     fElectronlifetime           = config.Electronlifetime();
@@ -190,11 +190,11 @@ namespace ldp{
     
     fSamplingRate               = config.SamplingRate();
     if( fSamplingRate <= 0 )    fSamplingRate = fTPCClock.TickPeriod() * 1.e3;
-  } // DetectorPropertiesAmSel::Configure()
+  } // DetectorPropertiesPixSim::Configure()
   
   //--------------------------------------------------------------------
-  DetectorPropertiesAmSel::Configuration_t
-  DetectorPropertiesAmSel::ValidateConfiguration(
+  DetectorPropertiesPixSim::Configuration_t
+  DetectorPropertiesPixSim::ValidateConfiguration(
     fhicl::ParameterSet const& p, std::set<std::string> ignore_params /* = {} */
   ) {
     
@@ -206,10 +206,10 @@ namespace ldp{
     
     return std::move(config_table());
     
-  } // DetectorPropertiesAmSel::ValidateConfiguration()
+  } // DetectorPropertiesPixSim::ValidateConfiguration()
   
   //--------------------------------------------------------------------
-  void DetectorPropertiesAmSel::ValidateAndConfigure(
+  void DetectorPropertiesPixSim::ValidateAndConfigure(
     fhicl::ParameterSet const& p, std::set<std::string> ignore_params /* = {} */
   ) {
     Configure(ValidateConfiguration(p, ignore_params));
@@ -217,26 +217,26 @@ namespace ldp{
   
   
   //------------------------------------------------------------------------------------//
-  void DetectorPropertiesAmSel::Setup(providers_type providers) {
+  void DetectorPropertiesPixSim::Setup(providers_type providers) {
     
     SetGeometry(providers.get<geo::DetectorGeometry>());
     SetLArProperties(providers.get<detinfo::LArProperties>());
     SetDetectorClocks(providers.get<detinfo::DetectorClocks>());
     
-  } // DetectorPropertiesAmSel::Setup()
+  } // DetectorPropertiesPixSim::Setup()
   
   
   //------------------------------------------------------------------------------------//
-  double DetectorPropertiesAmSel::Efield(unsigned int planegap) const
+  double DetectorPropertiesPixSim::Efield(unsigned int planegap) const
   {
     if(planegap >= fEfield.size())
-      throw cet::exception("DetectorPropertiesAmSel") << "requesting Electric field in a plane gap that is not defined\n";
+      throw cet::exception("DetectorPropertiesPixSim") << "requesting Electric field in a plane gap that is not defined\n";
     
     return fEfield[planegap];
   }
     
   //------------------------------------------------
-  double DetectorPropertiesAmSel::Density(double temperature) const
+  double DetectorPropertiesPixSim::Density(double temperature) const
   {
     // Default temperature use internal value.
     if(temperature == 0.)
@@ -245,7 +245,7 @@ namespace ldp{
     double density = -0.00615*temperature + 1.928;
   
     return density;
-  } // DetectorPropertiesAmSel::Density()
+  } // DetectorPropertiesPixSim::Density()
   
   
   //----------------------------------------------------------------------------------
@@ -265,7 +265,7 @@ namespace ldp{
   // Material parameters (stored in larproperties.fcl) are taken from
   // pdg web site http://pdg.lbl.gov/AtomicNuclearProperties/
   //
-  double DetectorPropertiesAmSel::Eloss(double mom, double mass, double tcut) const
+  double DetectorPropertiesPixSim::Eloss(double mom, double mass, double tcut) const
   {
     // Some constants.
   
@@ -312,10 +312,10 @@ namespace ldp{
     // Done.
   
     return dedx;
-  } // DetectorPropertiesAmSel::Eloss()
+  } // DetectorPropertiesPixSim::Eloss()
   
   //----------------------------------------------------------------------------------
-  double DetectorPropertiesAmSel::ElossVar(double mom, double mass) const
+  double DetectorPropertiesPixSim::ElossVar(double mom, double mass) const
   {
     // Some constants.
   
@@ -332,11 +332,11 @@ namespace ldp{
   
     double result = gamma2 * (1. - 0.5 * beta2) * me * (fLP->AtomicNumber() / fLP->AtomicMass()) * K * Density();
     return result;
-  } // DetectorPropertiesAmSel::ElossVar()
+  } // DetectorPropertiesPixSim::ElossVar()
 
 
   //------------------------------------------------------------------------------------//
-  double DetectorPropertiesAmSel::DriftVelocity(double efield, double temperature) const 
+  double DetectorPropertiesPixSim::DriftVelocity(double efield, double temperature) const 
   {
 
   // Drift Velocity as a function of Electric Field and LAr Temperature
@@ -350,7 +350,7 @@ namespace ldp{
     efield = Efield();
   //
   if(efield > 4.0)
-    mf::LogWarning("DetectorPropertiesAmSel") << "DriftVelocity Warning! : E-field value of "
+    mf::LogWarning("DetectorPropertiesPixSim") << "DriftVelocity Warning! : E-field value of "
 				    << efield
 				    << " kV/cm is outside of range covered by drift"
 				    << " velocity parameterization. Returned value"
@@ -362,7 +362,7 @@ namespace ldp{
     temperature = Temperature();
 
   if(temperature < 87.0 || temperature > 94.0)
-    mf::LogWarning("DetectorPropertiesAmSel") << "DriftVelocity Warning! : Temperature value of "
+    mf::LogWarning("DetectorPropertiesPixSim") << "DriftVelocity Warning! : Temperature value of "
 				    << temperature
 				    << " K is outside of range covered by drift velocity"
 				    << " parameterization. Returned value may not be"
@@ -430,7 +430,7 @@ namespace ldp{
   //  dQdX in electrons/cm, charge (amplitude or integral obtained) divided by
   //         effective pitch for a given 3D track.
   // returns dEdX in MeV/cm
-  double DetectorPropertiesAmSel::BirksCorrection(double dQdx) const
+  double DetectorPropertiesPixSim::BirksCorrection(double dQdx) const
   {
     // Correction for charge quenching using parameterization from
     // S.Amoruso et al., NIM A 523 (2004) 275
@@ -448,7 +448,7 @@ namespace ldp{
   
   //----------------------------------------------------------------------------------
   // Modified Box model correction 
-  double DetectorPropertiesAmSel::ModBoxCorrection(double dQdx) const
+  double DetectorPropertiesPixSim::ModBoxCorrection(double dQdx) const
   {
     // Modified Box model correction has better behavior than the Birks
     // correction at high values of dQ/dx.
@@ -463,7 +463,7 @@ namespace ldp{
   }
   
   //------------------------------------------------------------------------------------//
-  int  DetectorPropertiesAmSel::TriggerOffset()     const 
+  int  DetectorPropertiesPixSim::TriggerOffset()     const 
   {
     return fTPCClock.Ticks(fClocks->TriggerOffsetTPC() * -1.);
   }
@@ -483,7 +483,7 @@ namespace ldp{
   // Take an X coordinate, and convert to a number of ticks, the
   // charge deposit occured at t=0
  
-  double DetectorPropertiesAmSel::ConvertXToTicks(double X, int p, int t, int c) const
+  double DetectorPropertiesPixSim::ConvertXToTicks(double X, int p, int t, int c) const
   {
     return (X / (fXTicksCoefficient * fDriftDirection.at(c).at(t)) +  fXTicksOffsets.at(c).at(t).at(p) );
   }
@@ -494,34 +494,34 @@ namespace ldp{
   // Take a cooridnate in ticks, and convert to an x position
   // assuming event deposit occured at t=0
  
-  double  DetectorPropertiesAmSel::ConvertTicksToX(double ticks, int p, int t, int c) const
+  double  DetectorPropertiesPixSim::ConvertTicksToX(double ticks, int p, int t, int c) const
   {
     return (ticks - fXTicksOffsets.at(c).at(t).at(p)) * fXTicksCoefficient * fDriftDirection.at(c).at(t);  
   }
   
 
   //--------------------------------------------------------------------
-  void DetectorPropertiesAmSel::CheckIfConfigured() const
+  void DetectorPropertiesPixSim::CheckIfConfigured() const
   {
     if (!fGeo) throw cet::exception(__FUNCTION__) << "Geometry is uninitialized!";
-    if (!fLP) throw cet::exception(__FUNCTION__) << "LArPropertiesAmSel is uninitialized!";
+    if (!fLP) throw cet::exception(__FUNCTION__) << "LArPropertiesPixSim is uninitialized!";
     if (!fClocks) throw cet::exception(__FUNCTION__) << "DetectorClocks is uninitialized!";
   }
 
   //--------------------------------------------------------------------
-  double DetectorPropertiesAmSel::GetXTicksOffset(int p, int t, int c) const
+  double DetectorPropertiesPixSim::GetXTicksOffset(int p, int t, int c) const
   {
     return fXTicksOffsets.at(c).at(t).at(p);
   }
 
   //--------------------------------------------------------------------
-  double DetectorPropertiesAmSel::GetXTicksCoefficient() const
+  double DetectorPropertiesPixSim::GetXTicksCoefficient() const
   {
     return fXTicksCoefficient;
   }
 
   //--------------------------------------------------------------------
-  double DetectorPropertiesAmSel::GetXTicksCoefficient(int t, int c) const
+  double DetectorPropertiesPixSim::GetXTicksCoefficient(int t, int c) const
   {
     return fXTicksCoefficient * fDriftDirection.at(c).at(t);
   }

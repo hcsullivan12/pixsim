@@ -60,7 +60,7 @@ art_make(MODULE_LIBRARIES
          larsim_Simulation lardataobj_Simulation
          nusimdata_SimulationBase
          larcoreobj_SummaryData
-         amselsim_Geometry
+         pixsim_Geometry
          nurandom_RandomUtils_NuRandomService_service
          nugen_EventGeneratorBase_GENIE
          ${ART_FRAMEWORK_SERVICES_REGISTRY}

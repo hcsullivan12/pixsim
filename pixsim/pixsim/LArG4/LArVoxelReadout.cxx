@@ -27,9 +27,9 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 // LArSoft code
-#include "amselsim/LArG4/LArVoxelReadout.h"
-#include "amselsim/LArG4/ParticleListAction.h"
-#include "amselsim/Geometry/AmSelGeometryService.h"
+#include "pixsim/LArG4/LArVoxelReadout.h"
+#include "pixsim/LArG4/ParticleListAction.h"
+#include "pixsim/Geometry/PixSimGeometryService.h"
 #include "larevt/SpaceChargeServices/SpaceChargeService.h"
 #include "larcoreobj/SimpleTypesAndConstants/RawTypes.h" // raw::ChannelID_t
 
@@ -38,7 +38,7 @@
 #include "CLHEP/Random/RandPoisson.h"
 #include "CLHEP/Random/RandFlat.h"
 
-namespace amselg4 {
+namespace pixsimg4 {
 
 
   //---------------------------------------------------------------------------------------
@@ -213,7 +213,7 @@ namespace amselg4 {
 
       // Make sure we have the IonizationAndScintillation singleton
       // reset to this step
-      amselg4::IonizationAndScintillation::Instance()->Reset(step);
+      pixsimg4::IonizationAndScintillation::Instance()->Reset(step);
       fNSteps++;
       if( !fDontDriftThem ){
 
@@ -239,7 +239,7 @@ namespace amselg4 {
           const G4VTouchable* pTouchable = step->GetPreStepPoint()->GetTouchable();
           if (!pTouchable) {
             throw cet::exception
-              ("AmSelG4") << "Untouchable step in LArVoxelReadout::ProcessHits()";
+              ("PixSimG4") << "Untouchable step in LArVoxelReadout::ProcessHits()";
           }
 
           // one of the ancestors of the touched volume is supposed to be
@@ -264,7 +264,7 @@ namespace amselg4 {
             // this is a fundamental error where the step does not happen in
             // any TPC; this should not happen in the readout geometry!
             throw cet::exception
-              ("AmSelG4") << "No TPC ID found in LArVoxelReadout::ProcessHits()";
+              ("PixSimG4") << "No TPC ID found in LArVoxelReadout::ProcessHits()";
           } // if
           MF_LOG_DEBUG("LArVoxelReadoutHit") << " hit in C=" << cryostat << " T=" << tpc;
         } // if more than one TPC
@@ -413,8 +413,8 @@ namespace amselg4 {
       }
 
       const double lifetimecorrection = TMath::Exp(TDrift / LifetimeCorr_const);
-      const int    nIonizedElectrons  = amselg4::IonizationAndScintillation::Instance()->NumberIonizationElectrons();
-      const double energy             = amselg4::IonizationAndScintillation::Instance()->EnergyDeposit();
+      const int    nIonizedElectrons  = pixsimg4::IonizationAndScintillation::Instance()->NumberIonizationElectrons();
+      const double energy             = pixsimg4::IonizationAndScintillation::Instance()->EnergyDeposit();
 
       // if we have no electrons (too small energy or too large recombination)
       // we are done already here
@@ -591,4 +591,4 @@ namespace amselg4 {
   void LArVoxelReadout::DrawAll()  {}
   void LArVoxelReadout::PrintAll() {}
 
-} // namespace amselg4
+} // namespace pixsimg4

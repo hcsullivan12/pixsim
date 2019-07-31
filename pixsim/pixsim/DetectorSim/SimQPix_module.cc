@@ -27,7 +27,7 @@
 #include "nurandom/RandomUtils/NuRandomService.h"
 
 #include "pixsim/Geometry/DetectorGeometryService.h"
-#include "pixsim/Services/AmSelSignalShapingService.h"
+#include "pixsim/Services/PixSimSignalShapingService.h"
 
 #include "CLHEP/Random/RandGaussQ.h"
 
@@ -99,7 +99,7 @@ void SimQPix::produce(art::Event& e)
   auto const *detprop = art::ServiceHandle<detinfo::DetectorPropertiesService const>{}->provider();
   auto const *ts      = lar::providerFrom<detinfo::DetectorClocksService>();
   auto const *geom    = art::ServiceHandle<geo::DetectorGeometryService>()->provider();
-  art::ServiceHandle<util::AmSelSignalShapingService> sss;
+  art::ServiceHandle<util::PixSimSignalShapingService> sss;
   art::ServiceHandle<util::LArFFT> fft;
   auto nTicks = fft->FFTSize();
 

@@ -9,7 +9,7 @@ art_make(LIB_LIBRARIES pixsim_Geometry
                           pixsim_Geometry
                           pixsim_Services
                           pixsim_LArG4
-                          pixsim_Services_AmSelSignalShapingService_service
+                          pixsim_Services_PixSimSignalShapingService_service
                           lardataobj_RecoBase
 			  lardataobj_RawData
                           lardata_ArtDataHelper

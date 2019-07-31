@@ -1,12 +1,12 @@
 /**
- * @file AmSelGeometry.h
- * @brief Interface to AmSel geometry information.
+ * @file PixSimGeometry.h
+ * @brief Interface to pixel geometry information.
  * 
  * @author H. Sullivan (hsulliva@fnal.gov)
  */
 
-#ifndef AMSELGEO_AMSELGEOMETRY_H
-#define AMSELGEO_AMSELGEOMETRY_H
+#ifndef PIXGEO_PIXSIMGEOMETRY_H
+#define PIXGEO_PIXSIMGEOMETRY_H
 
 // framework libraries
 #include "fhiclcpp/ParameterSet.h"
@@ -18,20 +18,20 @@
 // LArSoft includes
 #include "larcore/Geometry/Geometry.h" // Point_t
 
-// amselsim includes
-#include "amselsim/Geometry/DetectorGeometry.h"
+// pixsim includes
+#include "pixsim/Geometry/DetectorGeometry.h"
 
 // C++ includes
 #include <set>
 
-namespace amselgeo
+namespace pixgeo
 {
   using UShort2_t = unsigned short;
   using ULong4_t = unsigned long;
   using ULong8_t = unsigned long long;
 
 /// Configuration parameter documentation goes here
-class AmSelGeometry : public geo::DetectorGeometry
+class PixSimGeometry : public geo::DetectorGeometry
 {
   public:
 
@@ -50,7 +50,7 @@ class AmSelGeometry : public geo::DetectorGeometry
       fhicl::Atom<std::string> GDML         
       {
         Name("GDML"),
-        Comment("Name of GDML file for AmSel geometry")
+        Comment("Name of GDML file for pixel geometry")
       };
 
       fhicl::Atom<bool> UseSimpleGeometry
@@ -67,12 +67,12 @@ class AmSelGeometry : public geo::DetectorGeometry
       
     };
 
-    AmSelGeometry();
+    PixSimGeometry();
     /// Constructor: reads the configuration from a parameter set
-    AmSelGeometry(fhicl::ParameterSet const& pset,
+    PixSimGeometry(fhicl::ParameterSet const& pset,
                   std::set<std::string> const& ignore_params = {});
-    AmSelGeometry(AmSelGeometry const&) = delete;
-    virtual ~AmSelGeometry() = default;
+    PixSimGeometry(PixSimGeometry const&) = delete;
+    virtual ~PixSimGeometry() = default;
 
     /// Method to validate parameter set
     void ValidateAndConfigure(
@@ -212,7 +212,7 @@ class AmSelGeometry : public geo::DetectorGeometry
     double                   fDetLength;         ///< Length of active volume in beam direction
     float                    fPixelSpacing;      ///< Pixel spacing for simplified geometry
     bool                     fUseSimpleGeometry; ///< Option to use simplified geometry
-}; // class AmSelGeometry
+}; // class PixSimGeometry
 
 }
 

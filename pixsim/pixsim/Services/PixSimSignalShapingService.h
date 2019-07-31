@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////
 ///
-/// \file   AmSelSignalShapingService.h
+/// \file   PixSimSignalShapingService.h
 ///
 /// \brief  Service to provide microboone-specific signal shaping for
 ///         simulation (convolution) and reconstruction (deconvolution).
@@ -36,14 +36,14 @@
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
 namespace util {
-  class AmSelSignalShapingService {
+  class PixSimSignalShapingService {
   public:
 
     // Constructor, destructor.
 
-    AmSelSignalShapingService(const fhicl::ParameterSet& pset,
+    PixSimSignalShapingService(const fhicl::ParameterSet& pset,
 				   art::ActivityRegistry& reg);
-    ~AmSelSignalShapingService();
+    ~PixSimSignalShapingService();
 
     // Update configuration parameters.
 
@@ -56,7 +56,7 @@ namespace util {
 
   private:
 
-    void init() const{const_cast<AmSelSignalShapingService*>(this)->init();}
+    void init() const{const_cast<PixSimSignalShapingService*>(this)->init();}
     void init();
 
     // Calculate response functions.
@@ -76,11 +76,11 @@ namespace util {
 
 //----------------------------------------------------------------------
 // Do convolution.
-template <class T> inline void util::AmSelSignalShapingService::Convolute(std::vector<T>& func) const
+template <class T> inline void util::PixSimSignalShapingService::Convolute(std::vector<T>& func) const
 { 
   SignalShaping().Convolute(func);
 }
 
 
-DECLARE_ART_SERVICE(util::AmSelSignalShapingService, LEGACY)
+DECLARE_ART_SERVICE(util::PixSimSignalShapingService, LEGACY)
 #endif

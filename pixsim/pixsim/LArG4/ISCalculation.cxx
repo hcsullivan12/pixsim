@@ -5,14 +5,14 @@
 /// \author  brebel@fnal.gov
 ////////////////////////////////////////////////////////////////////////
 
-#include "amselsim/LArG4/ISCalculation.h"
+#include "pixsim/LArG4/ISCalculation.h"
 #include "larsim/Simulation/LArG4Parameters.h"
 #include "larevt/SpaceChargeServices/SpaceChargeService.h"
 
 // Framework includes
 #include "cetlib_except/exception.h"
 
-namespace amselg4 {
+namespace pixsimg4 {
 
   //----------------------------------------------------------------------
   ISCalculation::ISCalculation()

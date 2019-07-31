@@ -8,7 +8,7 @@ art_make(LIB_LIBRARIES  larsim_PhotonPropagation
                         lardata_Utilities
                         larsim_Simulation nutools_ParticleNavigation lardataobj_Simulation
                         larcorealg_Geometry
-                        amselsim_Geometry
+                        pixsim_Geometry
                         larcore_Geometry_Geometry_service
                         nusimdata_SimulationBase
                         nurandom_RandomUtils_NuRandomService_service
@@ -33,8 +33,8 @@ art_make(LIB_LIBRARIES  larsim_PhotonPropagation
                         ${ROOT_MATHCORE}
                         ${CLHEP}
                         ${G4_LIB_LIST}
-           MODULE_LIBRARIES amselsim_LArG4
-                        amselsim_Geometry
+           MODULE_LIBRARIES pixsim_LArG4
+                        pixsim_Geometry
                         larsim_MCCheater_ParticleInventoryService_service
                         lardataalg_MCDumpers
                         larsim_Simulation nutools_ParticleNavigation lardataobj_Simulation

@@ -22,7 +22,7 @@
 ///
 /// This class works differently, by accumulating the information in
 /// its internal sim::LArVoxelList.  See LArVoxelListAction for how
-/// this information is made available to the main AmSelG4 module.
+/// this information is made available to the main PixSimG4 module.
 ///
 /// Why define a parallel geometry?  Here are some reasons:
 ///
@@ -39,8 +39,8 @@
 ///   readouts, so this mechanism is relatively easy to extend for
 ///   each type of readout.
 
-#ifndef AmSelG4_LArVoxelReadout_h
-#define AmSelG4_LArVoxelReadout_h
+#ifndef PixSimG4_LArVoxelReadout_h
+#define PixSimG4_LArVoxelReadout_h
 
 #include <stdint.h>
 #include <vector>
@@ -50,11 +50,11 @@
 #include "Geant4/G4PVPlacement.hh"
 #include "Geant4/globals.hh"
 
-#include "amselsim/Geometry/AmSelGeometryService.h"
+#include "pixsim/Geometry/PixSimGeometryService.h"
 
 #include "lardataobj/Simulation/SimChannel.h"
 #include "larsim/Simulation/LArG4Parameters.h"
-#include "amselsim/LArG4/IonizationAndScintillation.h"
+#include "pixsim/LArG4/IonizationAndScintillation.h"
 #include "lardata/DetectorInfoServices/LArPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
@@ -65,7 +65,7 @@ class G4TouchableHistory;
 class G4Step;
 namespace CLHEP { class HEPRandomEngine; }
 
-namespace amselg4 {
+namespace pixsimg4 {
 
   /// Simple structure holding a TPC and cryostat number
   struct TPCID_t {
@@ -123,7 +123,7 @@ namespace amselg4 {
    * transportation of the ensuing ionisation electrons to the readout channels:
    *
    * 1. the number of ionisation electrons is read from the current
-   *   `amselg4::IonizationAndScintillation` instance
+   *   `pixsimg4::IonizationAndScintillation` instance
    * 2. space charge displacement is optionally applied
    * 3. lifetime correction is applied
    * 4. charge is split in small electron clusters
@@ -326,7 +326,7 @@ namespace amselg4 {
 
     std::vector<std::vector<ChannelMap_t>>    fChannelMaps; ///< Maps of cryostat, tpc to channel data
     art::ServiceHandle<geo::DetectorGeometryService const> fGeoHandle;
-    art::ServiceHandle<sim::LArG4Parameters const>  fLgpHandle;  ///< Handle to the AmSelG4 parameters service
+    art::ServiceHandle<sim::LArG4Parameters const>  fLgpHandle;  ///< Handle to the PixSimG4 parameters service
     unsigned int                              fTPC;        ///< which TPC this LArVoxelReadout corresponds to
     unsigned int                              fCstat;      ///< and in which cryostat (if bSingleTPC is true)
     bool                                      bSingleTPC;  ///< true if this readout is associated with a single TPC
@@ -345,4 +345,4 @@ namespace amselg4 {
 
 }
 
-#endif // AmSelG4_LArVoxelReadout_h
+#endif // PixSimG4_LArVoxelReadout_h

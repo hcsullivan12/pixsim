@@ -19,8 +19,8 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 // LArSoft includes
-#include "amselsim/LArG4/LArVoxelReadoutGeometry.h"
-#include "amselsim/LArG4/LArVoxelReadout.h"
+#include "pixsim/LArG4/LArVoxelReadoutGeometry.h"
+#include "pixsim/LArG4/LArVoxelReadout.h"
 #include "larsim/Simulation/LArVoxelCalculator.h"
 
 // G4 includes
@@ -119,7 +119,7 @@ int DumpPhysicalVolume
 } // DumpPhysicalVolume()
 
 
-namespace amselg4 {
+namespace pixsimg4 {
 
   // Constructor and destructor.
   LArVoxelReadoutGeometry::LArVoxelReadoutGeometry
@@ -127,7 +127,7 @@ namespace amselg4 {
     : G4VUserParallelWorld(name)
     , fReadoutSetupData(setupData.readoutSetup)
   {
-    amselg4::IonizationAndScintillation *ios = amselg4::IonizationAndScintillation::Instance();
+    pixsimg4::IonizationAndScintillation *ios = pixsimg4::IonizationAndScintillation::Instance();
     auto fStepLimit = std::make_unique<G4UserLimits>(ios->StepSizeLimit());
   }
 
@@ -553,4 +553,4 @@ namespace amselg4 {
   }
 
 
-} // namespace amselg4
+} // namespace pixsimg4

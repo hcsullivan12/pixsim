@@ -6,15 +6,15 @@
 /// \author  brebel@fnal.gov
 ////////////////////////////////////////////////////////////////////////
 
-#include "amselsim/LArG4/IonizationAndScintillationAction.h"
-#include "amselsim/LArG4/IonizationAndScintillation.h"
+#include "pixsim/LArG4/IonizationAndScintillationAction.h"
+#include "pixsim/LArG4/IonizationAndScintillation.h"
 
 
 #include "Geant4/G4Step.hh"
 
 #include <algorithm>
 
-namespace amselg4 {
+namespace pixsimg4 {
 
   //----------------------------------------------------------------------------
   // Constructor.
@@ -33,9 +33,9 @@ namespace amselg4 {
   // scintillation photons using the IonizationAndScintillation singleton.
   void IonizationAndScintillationAction::SteppingAction(const G4Step* step)
   {
-    amselg4::IonizationAndScintillation::Instance()->Reset(step);
+    pixsimg4::IonizationAndScintillation::Instance()->Reset(step);
 
     return;
   }
 
-} // namespace AmSelG4
+} // namespace PixSimG4

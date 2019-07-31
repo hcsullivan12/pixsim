@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////////////////////////
 
 // lar includes
-#include "amselsim/LArG4/IonizationAndScintillation.h"
-#include "amselsim/LArG4/ISCalculationNEST.h"
-#include "amselsim/LArG4/ISCalculationSeparate.h"
+#include "pixsim/LArG4/IonizationAndScintillation.h"
+#include "pixsim/LArG4/ISCalculationNEST.h"
+#include "pixsim/LArG4/ISCalculationSeparate.h"
 #include "larsim/Simulation/LArG4Parameters.h"
 
 // ROOT includes
@@ -22,7 +22,7 @@
 // C/C++ standard libraries
 #include <cassert>
 
-namespace amselg4 {
+namespace pixsimg4 {
 
   static IonizationAndScintillation* gInstance = 0;
 
@@ -59,9 +59,9 @@ namespace amselg4 {
     fISCalculator = lgp->IonAndScintCalculator();
 
     if(fISCalculator.compare("NEST") == 0)
-      fISCalc = new amselg4::ISCalculationNEST(fEngine);
+      fISCalc = new pixsimg4::ISCalculationNEST(fEngine);
     else if(fISCalculator.compare("Separate") == 0)
-      fISCalc = new amselg4::ISCalculationSeparate(fEngine);
+      fISCalc = new pixsimg4::ISCalculationSeparate(fEngine);
     else
       mf::LogWarning("IonizationAndScintillation") << "No ISCalculation set, this can't be good.";
 

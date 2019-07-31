@@ -1,4 +1,4 @@
-#include "amselsim_services.fcl"
+#include "pixsim_services.fcl"
 
 process_name: SinglesGen
 
@@ -10,7 +10,7 @@ services:
   RandomNumberGenerator: {} #ART native random number generator
   #              @table::lariat_simulation_services
   
-  @table::amselsim_simulation_services 
+  @table::pixsim_simulation_services 
   NuRandomService: @local::random_NuRandomService
 }
 
@@ -31,14 +31,13 @@ physics:
 {
  producers:
  {
-   generator: @local::amselsim_singlep	  
-   largeant:  @local::amselsim_largeant	  
+   generator: @local::pixsim_singlep	  
+   largeant:  @local::pixsim_largeant	  
    rns:       { module_type: "RandomNumberSaver" }
  }
 
  analyzers:
 {
-  #anatree: @local::lariat_anatree
 }
 
  #define the producer and filter modules for this path, order matters, 

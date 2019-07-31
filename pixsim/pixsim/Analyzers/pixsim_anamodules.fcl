@@ -4,7 +4,7 @@ BEGIN_PROLOG
 
 pixsim_ana:
 {
- module_type:          "AmSelAnaTree"
+ module_type:          "PixSimAnaTree"
  G4ModuleLabel:        "largeant"
  GenieModuleLabel:     "generator"
  PhotProjModuleLabel:  "photproj"

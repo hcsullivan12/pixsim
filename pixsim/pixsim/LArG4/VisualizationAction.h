@@ -11,7 +11,7 @@
 /// Geant4 examples; the only difference is that it's put into an
 /// UserAction class.
 ///
-/// It uses multiple inheritance: it inherits from AmSelG4::UserAction,
+/// It uses multiple inheritance: it inherits from PixSimG4::UserAction,
 /// in order to take advantage of Geant4's user hooks; it also
 /// inherits from cfg::Observer, because it accesses a parameter from
 /// an XML configuration file.
@@ -21,8 +21,8 @@
 ///
 /// 25-Feb-2009 WGS: Revised for FMWK/LArSoft
 
-#ifndef AmSelG4_VisualizationAction_H
-#define AmSelG4_VisualizationAction_H
+#ifndef PixSimG4_VisualizationAction_H
+#define PixSimG4_VisualizationAction_H
 
 #include "nutools/G4Base/UserAction.h"
 #include "Geant4/globals.hh"
@@ -32,7 +32,7 @@
 class G4Run;
 class G4Event;
 
-namespace amselg4 {
+namespace pixsimg4 {
 
   class VisualizationAction : public g4b::UserAction
   {
@@ -57,6 +57,6 @@ namespace amselg4 {
     G4bool m_drawNeutrals;
   };
 
-} // namespace AmSelG4
+} // namespace PixSimG4
 
-#endif // AmSelG4_VisualizationAction_H
+#endif // PixSimG4_VisualizationAction_H

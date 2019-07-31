@@ -18,7 +18,7 @@
 //
 
 
-#include "amselsim/LArG4/MuNuclearSplittingProcessXSecBias.h"
+#include "pixsim/LArG4/MuNuclearSplittingProcessXSecBias.h"
 
 #include "Geant4/G4WrapperProcess.hh"
 #include "Geant4/G4VParticleChange.hh"
@@ -39,7 +39,7 @@
 
 #include <TMath.h>
 
-namespace amselg4 {
+namespace pixsimg4 {
 
 
 

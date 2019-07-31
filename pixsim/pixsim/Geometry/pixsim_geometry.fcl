@@ -1,0 +1,13 @@
+
+BEGIN_PROLOG
+
+pixsim_geoservice:
+{
+  service_provider:  "PixSimGeometryService"
+  Name:              "pixels"
+  GDML:              "pixels_forgenie.gdml" #"pixels_nopixels.gdml" 
+  UseSimpleGeometry: true
+  PixelSpacing:      0.4 # in cm
+}
+
+END_PROLOG

@@ -8,13 +8,13 @@
 #ifndef LARG4_ISCALCULATIONNEST_H
 #define LARG4_ISCALCULATIONNEST_H
 
-#include "amselsim/LArG4/ISCalculation.h"
-#include "amselsim/LArG4/NestAlg.h"
+#include "pixsim/LArG4/ISCalculation.h"
+#include "pixsim/LArG4/NestAlg.h"
 
 // forward declaration
 namespace CLHEP { class HepRandomEngine; }
 
-namespace amselg4 {
+namespace pixsimg4 {
 
   class ISCalculationNEST : public ISCalculation {
 

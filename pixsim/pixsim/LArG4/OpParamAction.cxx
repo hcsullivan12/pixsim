@@ -3,7 +3,7 @@
 
 
 
-#include "amselsim/LArG4/OpParamAction.h"
+#include "pixsim/LArG4/OpParamAction.h"
 
 #include "cetlib_except/exception.h"
 
@@ -13,7 +13,7 @@
 
 
 
-namespace amselg4
+namespace pixsimg4
 {
 
   //-----------------------------------------------

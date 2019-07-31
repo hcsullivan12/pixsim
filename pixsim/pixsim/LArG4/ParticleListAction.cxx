@@ -5,7 +5,7 @@
 /// \author  seligman@nevis.columbia.edu
 ////////////////////////////////////////////////////////////////////////
 
-#include "amselsim/LArG4/ParticleListAction.h"
+#include "pixsim/LArG4/ParticleListAction.h"
 #include "nutools/G4Base/PrimaryParticleInformation.h"
 #include "lardataobj/Simulation/sim.h" // sim::NoParticleId
 #include "nutools/ParticleNavigation/ParticleList.h"
@@ -37,7 +37,7 @@
 double globalTime, velocity_G4, velocity_step;
 bool entra = true;
 
-namespace amselg4 {
+namespace pixsimg4 {
 
   // Initialize static members.
   int ParticleListAction::fCurrentTrackID = sim::NoParticleId;
@@ -529,4 +529,4 @@ namespace amselg4 {
 
   //----------------------------------------------------------------------------
 
-} // namespace AmSelG4
+} // namespace PixSimG4

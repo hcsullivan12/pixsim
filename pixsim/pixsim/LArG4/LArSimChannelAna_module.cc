@@ -59,7 +59,7 @@ namespace larg {
 
   private:
 
-    std::string            fAmSelG4ModuleLabel;
+    std::string            fPixSimG4ModuleLabel;
 
     // Flag for initialization done, because we set up histograms the
     // first time through beginRun() so that we can use the
@@ -92,7 +92,7 @@ namespace larg {
   //-------------------------------------------------
   LArSimChannelAna::LArSimChannelAna(fhicl::ParameterSet const& pset)
     : EDAnalyzer(pset)
-    , fAmSelG4ModuleLabel{pset.get< std::string >("LArGeantModuleLabel")}
+    , fPixSimG4ModuleLabel{pset.get< std::string >("LArGeantModuleLabel")}
     , initDone(false)
     , fChargeXpos()
     , fChargeYpos()
@@ -180,7 +180,7 @@ namespace larg {
     art::ServiceHandle<geo::Geometry const> geom;
 
     art::Handle< std::vector<sim::SimChannel> > chanHandle;
-    evt.getByLabel(fAmSelG4ModuleLabel,chanHandle);
+    evt.getByLabel(fPixSimG4ModuleLabel,chanHandle);
     const std::vector<sim::SimChannel>& scVec(*chanHandle);
 
     //++++++++++

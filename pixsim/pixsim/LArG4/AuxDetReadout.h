@@ -15,7 +15,7 @@
 #include "larcorealg/Geometry/AuxDetGeo.h"
 #include "larcorealg/Geometry/AuxDetSensitiveGeo.h"
 
-#include "amselsim/Geometry/AmSelGeometryService.h"
+#include "pixsim/Geometry/PixSimGeometryService.h"
 
 #include <vector>
 
@@ -24,7 +24,7 @@ class G4HCofThisEvent;
 class G4TouchableHistory;
 class G4Step;
 
-namespace amselg4 {
+namespace pixsimg4 {
 
   class AuxDetReadout : public G4VSensitiveDetector
   {

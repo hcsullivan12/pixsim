@@ -1,0 +1,55 @@
+#include "simulationservices.fcl"
+#include "larproperties.fcl"
+#include "detectorclocks.fcl"
+#include "pixsim_largeantmodules.fcl"
+#include "singles.fcl"
+#include "magfield_larsoft.fcl"
+#include "backtrackerservice.fcl"
+#include "particleinventoryservice.fcl"
+#include "seedservice.fcl"
+#include "pixsim_geometry.fcl"
+#include "spacecharge.fcl"
+#include "pixsim_detproperties.fcl"
+#include "larfft.fcl"
+
+BEGIN_PROLOG
+
+pixsim_simulation_services:
+{
+ LArG4Parameters:              @local::standard_largeantparameters
+ LArVoxelCalculator:           @local::standard_larvoxelcalculator
+ MagneticField:                @local::no_mag_larsoft
+ DetectorGeometryService:      @local::pixsim_geoservice
+ DetectorPropertiesService:    @local::pixsim_detproperties
+ LArPropertiesService:         @local::standard_properties
+ DetectorClocksService:        @local::standard_detectorclocks
+ LArFFT:                       @local::standard_larfft
+ PixSimSignalShapingService:    @local::pixsim_signalshapingservice
+ #BackTrackerService:           @local::standard_backtrackerservice
+ #ParticleInventoryService:     @local::standard_particleinventoryservice
+ NuRandomService:              @local::random_NuRandomService
+ SpaceCharge:                  @local::standard_spacecharge
+}
+
+pixsim_singlep: @local::standard_singlep
+pixsim_largeant: @local::pixsim_largeant
+
+pixsim_simulation_services.LArG4Parameters.NoElectronPropagation: false
+pixsim_simulation_services.LArG4Parameters.OffPlaneMargin: 0
+pixsim_simulation_services.LArG4Parameters.NoPhotonPropagation: false
+pixsim_simulation_services.LArG4Parameters.UseLitePhotons: false
+pixsim_simulation_services.LArG4Parameters.StoreReflected: false
+pixsim_simulation_services.LArG4Parameters.UseCustomPhysics: true
+pixsim_simulation_services.LArG4Parameters.EnabledPhysics: [ "Em", "SynchrotronAndGN", "Ion", "Hadron", "Optical", "Decay", "HadronElastic", "Stopping", "NeutronTrackingCut" ]
+
+
+pixsim_simulation_services.LArPropertiesService.ScintPreScale: 1.0
+pixsim_simulation_services.LArPropertiesService.ScintByParticleType: true
+
+pixsim_simulation_services.DetectorClocksService.ClockSpeedTPC: 50
+#pixsim_simulation_services.DetectorClocksService.FramePeriod: 409.6
+
+pixsim_simulation_services.LArFFT.FFTSize: 0
+
+
+END_PROLOG

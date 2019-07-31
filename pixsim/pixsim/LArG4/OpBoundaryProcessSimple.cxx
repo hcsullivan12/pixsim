@@ -55,14 +55,14 @@
 #include "Geant4/G4OpProcessSubType.hh"
 #include "Geant4/G4GeometryTolerance.hh"
 
-#include "amselsim/LArG4/OpBoundaryProcessSimple.hh"
+#include "pixsim/LArG4/OpBoundaryProcessSimple.hh"
 #include "larsim/Simulation/LArG4Parameters.h"
 
 //#define G4DEBUG_OPTICAL
 
 
 
-namespace amselg4 {
+namespace pixsimg4 {
 
   //Constructor
 
@@ -106,8 +106,8 @@ namespace amselg4 {
   {
 
     // Note - these have to be loaded here, since this object
-    // is constructed before AmSelG4, and hence before the
-    // AmSelG4 parameters are read from config
+    // is constructed before PixSimG4, and hence before the
+    // PixSimG4 parameters are read from config
 
     fTheStatus = Undefined;
     aParticleChange.Initialize(aTrack);

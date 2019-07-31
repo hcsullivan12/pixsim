@@ -11,8 +11,8 @@
 #include "Geant4/G4LossTableManager.hh"
 #include "Geant4/G4EmSaturation.hh"
 
-#include "amselsim/LArG4/ISCalculationSeparate.h"
-#include "amselsim/Geometry/AmSelGeometryService.h"
+#include "pixsim/LArG4/ISCalculationSeparate.h"
+#include "pixsim/Geometry/PixSimGeometryService.h"
 
 #include "lardata/DetectorInfoServices/LArPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
@@ -23,7 +23,7 @@
 #include "cetlib_except/exception.h"
 
 
-namespace amselg4{
+namespace pixsimg4{
 
   //----------------------------------------------------------------------------
   ISCalculationSeparate::ISCalculationSeparate(CLHEP::HepRandomEngine&)

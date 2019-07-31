@@ -1,11 +1,11 @@
 ////////////////////////////////////////////////////////////////////////
 //
-//  \file DetectorPropertiesAmSel_service.cc
+//  \file DetectorPropertiesPixSim_service.cc
 //
 ////////////////////////////////////////////////////////////////////////
 
-#include "amselsim/Services/DetectorPropertiesServiceAmSel.h"
-#include "amselsim/Geometry/AmSelGeometryService.h"
+#include "pixsim/Services/DetectorPropertiesServicePixSim.h"
+#include "pixsim/Geometry/PixSimGeometryService.h"
 
 // LArSoft includes
 #include "lardata/DetectorInfoServices/LArPropertiesService.h"
@@ -21,7 +21,7 @@
 namespace ldp{
 
   //--------------------------------------------------------------------
-  DetectorPropertiesServiceAmSel::DetectorPropertiesServiceAmSel
+  DetectorPropertiesServicePixSim::DetectorPropertiesServicePixSim
     (fhicl::ParameterSet const& pset, art::ActivityRegistry &reg)
       : fInheritNumberTimeSamples(pset.get<bool>("InheritNumberTimeSamples", false)),
 	fUseDatabaseForMC(pset.get<bool>("UseDatabaseForMC", false))
@@ -29,11 +29,11 @@ namespace ldp{
     fGotElectronLifetimeFromDB = false;
     // Register for callbacks.
 
-    reg.sPostOpenFile.watch    (this, &DetectorPropertiesServiceAmSel::postOpenFile);
-    reg.sPreProcessEvent.watch (this, &DetectorPropertiesServiceAmSel::preProcessEvent);
-    reg.sPreBeginRun.watch     (this, &DetectorPropertiesServiceAmSel::preBeginRun);
+    reg.sPostOpenFile.watch    (this, &DetectorPropertiesServicePixSim::postOpenFile);
+    reg.sPreProcessEvent.watch (this, &DetectorPropertiesServicePixSim::preProcessEvent);
+    reg.sPreBeginRun.watch     (this, &DetectorPropertiesServicePixSim::preBeginRun);
     
-    fProp = std::make_unique<ldp::DetectorPropertiesAmSel>(pset,
+    fProp = std::make_unique<ldp::DetectorPropertiesPixSim>(pset,
       lar::extractProviders<
       geo::DetectorGeometryService, 
       detinfo::LArPropertiesService,
@@ -51,7 +51,7 @@ namespace ldp{
   }
 
   //--------------------------------------------------------------------
-  void DetectorPropertiesServiceAmSel::reconfigure(fhicl::ParameterSet const& p)
+  void DetectorPropertiesServicePixSim::reconfigure(fhicl::ParameterSet const& p)
   {
     fProp->ValidateAndConfigure(p, { "InheritNumberTimeSamples" });
     
@@ -62,7 +62,7 @@ namespace ldp{
   }
 
   //-------------------------------------------------------------
-  void DetectorPropertiesServiceAmSel::preProcessEvent(const art::Event& evt, art::ScheduleContext)
+  void DetectorPropertiesServicePixSim::preProcessEvent(const art::Event& evt, art::ScheduleContext)
   {
     // Make sure TPC Clock is updated with TimeService (though in principle it shouldn't change
     fProp->UpdateClocks(lar::providerFrom<detinfo::DetectorClocksService>());
@@ -80,7 +80,7 @@ namespace ldp{
   //--------------------------------------------------------------------
   //  Callback called after input file is opened.
 
-  void DetectorPropertiesServiceAmSel::postOpenFile(const std::string& filename)
+  void DetectorPropertiesServicePixSim::postOpenFile(const std::string& filename)
   {
     // Use this method to figure out whether to inherit configuration
     // parameters from previous jobs.
@@ -132,7 +132,7 @@ namespace ldp{
 	  fhicl::make_ParameterSet(reinterpret_cast<char const *>(sqlite3_column_text(stmt, 0)), ps);
 	  // Is this a DetectorPropertiesService parameter set?
 
-	  bool psok = isDetectorPropertiesServiceAmSel(ps);
+	  bool psok = isDetectorPropertiesServicePixSim(ps);
 	  if(psok) {
 
 	    // Check NumberTimeSamples
@@ -162,7 +162,7 @@ namespace ldp{
 	if(// fInheritNumberTimeSamples && 
 	   nNumberTimeSamples != 0 && 
 	   iNumberTimeSamples != fProp->NumberTimeSamples()) {
-	  mf::LogInfo("DetectorPropertiesServiceAmSel")
+	  mf::LogInfo("DetectorPropertiesServicePixSim")
 	    << "Overriding configuration parameter NumberTimeSamples using historical value.\n"
 	    << "  Configured value:        " << fProp->NumberTimeSamples() << "\n"
 	    << "  Historical (used) value: " << iNumberTimeSamples << "\n";
@@ -183,7 +183,7 @@ namespace ldp{
   //--------------------------------------------------------------------
   //  Determine whether a parameter set is a DetectorPropertiesService configuration.
   
-  bool DetectorPropertiesServiceAmSel::isDetectorPropertiesServiceAmSel
+  bool DetectorPropertiesServicePixSim::isDetectorPropertiesServicePixSim
     (const fhicl::ParameterSet& ps) const
   {
     // This method uses heuristics to determine whether the parameter
@@ -192,11 +192,11 @@ namespace ldp{
     
     return 
          (ps.get<std::string>("service_type", "") == "DetectorPropertiesService")
-      && (ps.get<std::string>("service_provider", "") == "DetectorPropertiesServiceAmSel")
+      && (ps.get<std::string>("service_provider", "") == "DetectorPropertiesServicePixSim")
       ;
   }
 
 } // namespace detinfo
 
-DEFINE_ART_SERVICE_INTERFACE_IMPL(ldp::DetectorPropertiesServiceAmSel, detinfo::DetectorPropertiesService)
+DEFINE_ART_SERVICE_INTERFACE_IMPL(ldp::DetectorPropertiesServicePixSim, detinfo::DetectorPropertiesService)
 

@@ -5,7 +5,7 @@
 /// \author  brebel@fnal.gov
 ////////////////////////////////////////////////////////////////////////
 
-#include "amselsim/LArG4/G4BadIdeaAction.h"
+#include "pixsim/LArG4/G4BadIdeaAction.h"
 
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
@@ -16,21 +16,21 @@
 
 #include <algorithm>
 
-namespace amselg4 {
+namespace pixsimg4 {
 
   //----------------------------------------------------------------------------
   // Constructor.
   G4BadIdeaAction::G4BadIdeaAction(int trkOption) :
     fNoIncomingMuons(trkOption)
   {
-    // trkOption comes from AmSelG4's fSmartStacking
+    // trkOption comes from PixSimG4's fSmartStacking
     // Negative values effect action in this routine. Positive values
     // effect action in LArStackingAction.
     mf::LogWarning("G4BadIdeaAction") << "instantiating the G4BadIdeaAction \n"
 				      << "This UserAction is only to be used with "
 				      << "Geant4 v4.9.4.p02 to solve a stepping bug.\n"
 				      << "If you are using a different version of G4, "
-				      << "remove this UserAction from your list in AmSelG4.cxx";
+				      << "remove this UserAction from your list in PixSimG4.cxx";
   }
 
   //----------------------------------------------------------------------------
@@ -107,4 +107,4 @@ namespace amselg4 {
     return;
   }
 
-} // namespace AmSelG4
+} // namespace PixSimG4

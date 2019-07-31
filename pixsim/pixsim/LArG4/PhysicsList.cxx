@@ -6,12 +6,12 @@
 ////////////////////////////////////////////////////////////////////////
 //
 // Don't be too confused by the names.  PhysicsList.h and
-// PhysicsList.cxx define what the name "AmSelG4::PhysicList" means.
+// PhysicsList.cxx define what the name "PixSimG4::PhysicList" means.
 // However, that definition is mainly in terms of
-// AmSelG4::ModularPhysicsList, a class that inherits from
+// PixSimG4::ModularPhysicsList, a class that inherits from
 // G4VModularPhysicsList.
 
-#include "amselsim/LArG4/PhysicsList.h"
+#include "pixsim/LArG4/PhysicsList.h"
 
 #include "Geant4/G4VUserPhysicsList.hh"
 #include "Geant4/G4VModularPhysicsList.hh"
@@ -24,10 +24,10 @@
 #include "Geant4/G4ChargeExchangeProcess.hh"
 #include "nutools/G4Base/G4PhysListFactorySingleton.hh"
 
-PHYSLISTREG3(amselg4,PhysicsList,amselg4::PhysicsList)
+PHYSLISTREG3(pixsimg4,PhysicsList,pixsimg4::PhysicsList)
 #define G4MT_physicsVector ((G4VMPLsubInstanceManager.offset[g4vmplInstanceID]).physicsVector)
 
-namespace amselg4 {
+namespace pixsimg4 {
 
   // Constructor: call the G4 constructor.
   ModularPhysicsList::ModularPhysicsList()
@@ -181,4 +181,4 @@ namespace amselg4 {
     }
   }// end ConstructProcess
 
-} // namespace AmSelG4
+} // namespace PixSimG4

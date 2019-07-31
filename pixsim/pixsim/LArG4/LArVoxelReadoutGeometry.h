@@ -23,10 +23,10 @@
 ///   readouts, so this mechanism is relatively easy to extend for
 ///   each type of readout.
 
-#ifndef AmSelG4_LArVoxelReadoutGeometry_h
-#define AmSelG4_LArVoxelReadoutGeometry_h
+#ifndef PixSimG4_LArVoxelReadoutGeometry_h
+#define PixSimG4_LArVoxelReadoutGeometry_h
 
-#include "amselsim/LArG4/LArVoxelReadout.h"
+#include "pixsim/LArG4/LArVoxelReadout.h"
 #include "larcore/Geometry/Geometry.h"
 #include "Geant4/G4VUserParallelWorld.hh"
 #include "Geant4/G4String.hh"
@@ -37,7 +37,7 @@
 // Forward declarations
 namespace CLHEP { class HepRandomEngine; }
 
-namespace amselg4 {
+namespace pixsimg4 {
 
   class LArVoxelReadoutGeometry : public G4VUserParallelWorld
   {
@@ -47,7 +47,7 @@ namespace amselg4 {
     struct Setup_t {
 
       /// Set up data for `LArVoxelReadout`.
-      amselg4::LArVoxelReadout::Setup_t readoutSetup;
+      pixsimg4::LArVoxelReadout::Setup_t readoutSetup;
 
     }; // struct Setup_t
 
@@ -73,10 +73,10 @@ namespace amselg4 {
                                                   ///< so we have to
 
     /// Data for `LArVoxelReadout` setup.
-    amselg4::LArVoxelReadout::Setup_t fReadoutSetupData;
+    pixsimg4::LArVoxelReadout::Setup_t fReadoutSetupData;
 
   };
 
-} // namespace amselg4
+} // namespace pixsimg4
 
-#endif // AmSelG4_LArVoxelReadoutGeometry_h
+#endif // PixSimG4_LArVoxelReadoutGeometry_h

@@ -40,7 +40,7 @@
 #define OpDetLOOKUP_h 1
 
 
-namespace amselg4 {
+namespace pixsimg4 {
   class OpDetLookup
     {
     public:

@@ -32,9 +32,9 @@
 #include "Geant4/G4EmLivermorePhysics.hh"
 #include "Geant4/G4ChargeExchangePhysics.hh"
 
-#include "amselsim/LArG4/CustomPhysicsFactory.hh"
+#include "pixsim/LArG4/CustomPhysicsFactory.hh"
 
-namespace amselg4 {
+namespace pixsimg4 {
 
   class EmPhysicsFactory : public CustomPhysicsFactory<G4EmStandardPhysics>
   {

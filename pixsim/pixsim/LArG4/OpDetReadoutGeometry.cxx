@@ -8,10 +8,10 @@
 #include "cetlib_except/exception.h"
 
 #include "larsim/Simulation/LArG4Parameters.h"
-#include "amselsim/LArG4/OpDetReadoutGeometry.h"
-#include "amselsim/LArG4/OpDetLookup.h"
-#include "amselsim/LArG4/OpDetSensitiveDetector.h"
-#include "amselsim/LArG4/OpParamSD.h"
+#include "pixsim/LArG4/OpDetReadoutGeometry.h"
+#include "pixsim/LArG4/OpDetLookup.h"
+#include "pixsim/LArG4/OpDetSensitiveDetector.h"
+#include "pixsim/LArG4/OpParamSD.h"
 #include "Geant4/G4PVPlacement.hh"
 #include "Geant4/G4VSolid.hh"
 #include "Geant4/G4SDManager.hh"
@@ -19,7 +19,7 @@
 
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
-namespace amselg4 {
+namespace pixsimg4 {
 
   OpDetReadoutGeometry::OpDetReadoutGeometry(G4String OpDetSensitiveName, const G4String name) :
     G4VUserParallelWorld(name)

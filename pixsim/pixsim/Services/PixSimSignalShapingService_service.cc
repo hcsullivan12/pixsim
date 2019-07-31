@@ -3,7 +3,7 @@
 /// \author H. Greenlee 
 ////////////////////////////////////////////////////////////////////////
 
-#include "amselsim/Services/AmSelSignalShapingService.h"
+#include "pixsim/Services/PixSimSignalShapingService.h"
 
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
@@ -16,7 +16,7 @@
 
 //----------------------------------------------------------------------
 // Constructor.
-util::AmSelSignalShapingService::AmSelSignalShapingService(const fhicl::ParameterSet& pset,
+util::PixSimSignalShapingService::PixSimSignalShapingService(const fhicl::ParameterSet& pset,
                                                            art::ActivityRegistry& /* reg */)
 : fInit(false)
 {
@@ -26,14 +26,14 @@ util::AmSelSignalShapingService::AmSelSignalShapingService(const fhicl::Paramete
 
 //----------------------------------------------------------------------
 // Destructor.
-util::AmSelSignalShapingService::~AmSelSignalShapingService()
+util::PixSimSignalShapingService::~PixSimSignalShapingService()
 {
 }
 
 
 //----------------------------------------------------------------------
 // Reconfigure method.
-void util::AmSelSignalShapingService::reconfigure(const fhicl::ParameterSet& pset)
+void util::PixSimSignalShapingService::reconfigure(const fhicl::ParameterSet& pset)
 {
   // Reset initialization flag.
   fInit = false;
@@ -44,7 +44,7 @@ void util::AmSelSignalShapingService::reconfigure(const fhicl::ParameterSet& pse
 
 //--------------------------------------------------------------------
 const util::SignalShaping&
-util::AmSelSignalShapingService::SignalShaping() const
+util::PixSimSignalShapingService::SignalShaping() const
 {
   if(!fInit) init();
 
@@ -53,7 +53,7 @@ util::AmSelSignalShapingService::SignalShaping() const
 }
 
 //----------------------------------------------------------------------
-void util::AmSelSignalShapingService::init()
+void util::PixSimSignalShapingService::init()
 {
   if (fInit) return;
   fInit = true;
@@ -67,7 +67,7 @@ void util::AmSelSignalShapingService::init()
 }
 
 //----------------------------------------------------------------------
-double util::AmSelSignalShapingService::ElectronsToCurrent(double const& el) const
+double util::PixSimSignalShapingService::ElectronsToCurrent(double const& el) const
 {
   auto const *detprop = art::ServiceHandle<detinfo::DetectorPropertiesService const>{}->provider();
   // Convert and scale to pA
@@ -78,7 +78,7 @@ double util::AmSelSignalShapingService::ElectronsToCurrent(double const& el) con
 }
 
 //----------------------------------------------------------------------
-void util::AmSelSignalShapingService::SetElectResponse()
+void util::PixSimSignalShapingService::SetElectResponse()
 {
   art::ServiceHandle<util::LArFFT> fft;
   int nticks = fft->FFTSize();
@@ -100,6 +100,6 @@ void util::AmSelSignalShapingService::SetElectResponse()
 
 namespace util {
 
-  DEFINE_ART_SERVICE(AmSelSignalShapingService)
+  DEFINE_ART_SERVICE(PixSimSignalShapingService)
 
 }

@@ -4,8 +4,8 @@
 /// \author miceli@fnal.gov
 ////////////////////////////////////////////////////////////////////////
 
-#include "amselsim/LArG4/AuxDetReadout.h"
-#include "amselsim/LArG4/ParticleListAction.h"
+#include "pixsim/LArG4/AuxDetReadout.h"
+#include "pixsim/LArG4/ParticleListAction.h"
 
 
 #include "Geant4/G4HCofThisEvent.hh"
@@ -18,7 +18,7 @@
 #include <algorithm> // std::find()
 #include <ctime>
 
-namespace amselg4 {
+namespace pixsimg4 {
 
   AuxDetReadout::AuxDetReadout(std::string const& name,
 			       unsigned int       adNum,
@@ -151,4 +151,4 @@ namespace amselg4 {
   void AuxDetReadout::DrawAll()  {}
   void AuxDetReadout::PrintAll() {}
 
-} // namespace amselg4
+} // namespace pixsimg4

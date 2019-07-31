@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////
-// \file DetectorPropertiesAmSel.h
+// \file DetectorPropertiesPixSim.h
 //
 // \brief Experiment-specific service to contain information about detector
 //  electronics, etc
@@ -10,7 +10,7 @@
 #ifndef DETECTOR_PROPERTIES_AMSEL_H
 #define DETECTOR_PROPERTIES_AMSEL_H
 
-#include "amselsim/Geometry/AmSelGeometry.h"
+#include "pixsim/Geometry/PixSimGeometry.h"
 
 // LArSoft libraries
 #include "larcorealg/CoreUtils/ProviderPack.h"
@@ -30,7 +30,7 @@
 ///General LArSoft Utilities
 namespace ldp{
   
-  class DetectorPropertiesAmSel : public detinfo::DetectorProperties {
+  class DetectorPropertiesPixSim : public detinfo::DetectorProperties {
     public:
       /// List of service providers we depend on
       using providers_type = lar::ProviderPack<
@@ -57,7 +57,7 @@ namespace ldp{
         };
         fhicl::Atom<bool        > GetElectronlifetimeFromDB {
           Name("GetElectronlifetimeFromDB"),
-          Comment("option to get electron lifetime from AmSel conditions database")
+          Comment("option to get electron lifetime from PixSim conditions database")
         };
         fhicl::Atom<std::string        > ElectronlifetimeTag {
           Name("ElectronlifetimeTag"),
@@ -115,8 +115,8 @@ namespace ldp{
       
       }; // Configuration_t
  
-      DetectorPropertiesAmSel();
-      DetectorPropertiesAmSel(fhicl::ParameterSet const& pset, 
+      DetectorPropertiesPixSim();
+      DetectorPropertiesPixSim(fhicl::ParameterSet const& pset, 
 			 const geo::DetectorGeometry* geo,
 			 const detinfo::LArProperties* lp,
 			 const detinfo::DetectorClocks* c,
@@ -125,14 +125,14 @@ namespace ldp{
       /**
        * @brief Constructs the provider and sets up the dependencies
        * @param pset FHiCL parameter set for provider configuration
-       * @param providers pack of providers DetectorPropertiesAmSel depends on
+       * @param providers pack of providers DetectorPropertiesPixSim depends on
        * @see Setup()
        */
-      DetectorPropertiesAmSel(fhicl::ParameterSet const& pset,
+      DetectorPropertiesPixSim(fhicl::ParameterSet const& pset,
                          providers_type providers,
                          std::set<std::string> ignore_params = {});
-      DetectorPropertiesAmSel(DetectorPropertiesAmSel const&) = delete;
-      virtual ~DetectorPropertiesAmSel() = default;
+      DetectorPropertiesPixSim(DetectorPropertiesPixSim const&) = delete;
+      virtual ~DetectorPropertiesPixSim() = default;
       
       /**
        * @brief Configures the provider, first validating the configuration
@@ -175,7 +175,7 @@ namespace ldp{
        * 
        * Example:
        *     
-       *     lar::DetectorPropertiesAmSel::providers_type providers;
+       *     lar::DetectorPropertiesPixSim::providers_type providers;
        *     providers.set(lar::providerFrom<geo::Geometry>());
        *     providers.set(lar::providerFrom<detinfo::LArPropertiesService>());
        *     providers.set(lar::providerFrom<detinfo::DetectorClocksService>());
@@ -277,7 +277,7 @@ namespace ldp{
       virtual bool SimpleBoundary() const override { return fSimpleBoundary; }
       
       /// Verifies that the provider is in a fully configured status
-      /// @throw cet::exception (category DetectorPropertiesAmSel) if not ok
+      /// @throw cet::exception (category DetectorPropertiesPixSim) if not ok
       void CheckIfConfigured() const;
       
     protected:
@@ -326,7 +326,7 @@ namespace ldp{
 
       ::detinfo::ElecClock fTPCClock;     ///< TPC electronics clock
       bool fSimpleBoundary;
-    }; // class DetectorPropertiesAmSel
+    }; // class DetectorPropertiesPixSim
 } //namespace detinfo
 
 #endif // DETINFO_DETECTOR_PROPERTIES_H

@@ -20,8 +20,8 @@ cet_make(         LIBRARIES lardata_Utilities
                             nutools_IFDatabase
 )
 
-simple_plugin( DetectorPropertiesServiceAmSel  "service"
-               amselsim_Services
+simple_plugin( DetectorPropertiesServicePixSim  "service"
+               pixsim_Services
                ${SQLITE3}
                ${ART_ROOT_IO_ROOTDB}
                wda
@@ -31,8 +31,8 @@ simple_plugin( DetectorPropertiesServiceAmSel  "service"
                ${Boost_SYSTEM_LIBRARY}
 )
 
-simple_plugin( AmSelSignalShapingService  "service"
-               amselsim_Services
+simple_plugin( PixSimSignalShapingService  "service"
+               pixsim_Services
                lardata_Utilities_LArFFT_service
 )
 

@@ -9,11 +9,11 @@
 #include "Geant4/G4LossTableManager.hh"
 #include "Geant4/G4EmSaturation.hh"
 
-#include "amselsim/LArG4/ISCalculationNEST.h"
+#include "pixsim/LArG4/ISCalculationNEST.h"
 
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
-namespace amselg4{
+namespace pixsimg4{
 
   //----------------------------------------------------------------------------
   ISCalculationNEST::ISCalculationNEST(CLHEP::HepRandomEngine& engine)

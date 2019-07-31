@@ -1,5 +1,5 @@
 /**
- * @file AmSelAnaTree_module.cc
+ * @file PixSimAnaTree_module.cc
  * @brief Analyzer module for * 
  * @author H. Sullivan (hsulliva@fnal.gov)
  */
@@ -44,11 +44,11 @@
 namespace pixsim
 {
 
-class AmSelAnaTree : public art::EDAnalyzer 
+class PixSimAnaTree : public art::EDAnalyzer 
 {
 public:
-  explicit AmSelAnaTree(fhicl::ParameterSet const & p);
-  virtual ~AmSelAnaTree();
+  explicit PixSimAnaTree(fhicl::ParameterSet const & p);
+  virtual ~PixSimAnaTree();
 
   // Required functions.
   void analyze(art::Event const & e) override;
@@ -158,7 +158,7 @@ private:
 };
 
 //--------------------------------------------------------------------
-AmSelAnaTree::AmSelAnaTree(fhicl::ParameterSet const & pset) 
+PixSimAnaTree::PixSimAnaTree(fhicl::ParameterSet const & pset) 
  : EDAnalyzer{pset},
    fEngine(art::ServiceHandle<rndm::NuRandomService>{}
              ->createEngine(*this, "HepJamesRandom", "propagation", pset, "PropagationSeed"))
@@ -167,11 +167,11 @@ AmSelAnaTree::AmSelAnaTree(fhicl::ParameterSet const & pset)
 }
 
 //--------------------------------------------------------------------
-AmSelAnaTree::~AmSelAnaTree()
+PixSimAnaTree::~PixSimAnaTree()
 {}
 
 //--------------------------------------------------------------------
-void AmSelAnaTree::reconfigure(fhicl::ParameterSet const & pset)
+void PixSimAnaTree::reconfigure(fhicl::ParameterSet const & pset)
 {
   fTreeName            = pset.get< std::string >("TreeName", "anatree");
   fG4ModuleLabel       = pset.get< std::string >("G4ModuleLabel", "largeant");
@@ -181,7 +181,7 @@ void AmSelAnaTree::reconfigure(fhicl::ParameterSet const & pset)
 }
 
 //--------------------------------------------------------------------
-void AmSelAnaTree::analyze(art::Event const & evt)
+void PixSimAnaTree::analyze(art::Event const & evt)
 {
   // Reset variables
   ResetVars();
@@ -284,14 +284,14 @@ void AmSelAnaTree::analyze(art::Event const & evt)
         }
         ides_el.push_back(charge); 
       }
-      if (ides_t.size() != ides_el.size()) throw cet::exception("AmSelAnaTree") << "Check IDE sizes\n"; 
+      if (ides_t.size() != ides_el.size()) throw cet::exception("PixSimAnaTree") << "Check IDE sizes\n"; 
       
       ideTicks.push_back(ides_t);
       ideEls.push_back(ides_el);
     } 
    
     // Fill neutrino information
-    if (tlist.size() > 1) throw cet::exception("AmSelAnaTree") << "MCTruth list greater than 1\n";
+    if (tlist.size() > 1) throw cet::exception("PixSimAnaTree") << "MCTruth list greater than 1\n";
     for (size_t iT = 0; iT < tlist.size(); iT++)
     {
       simb::MCNeutrino nu   = tlist[iT].GetNeutrino();
@@ -503,7 +503,7 @@ void AmSelAnaTree::analyze(art::Event const & evt)
 }//<---End analyze()
 
 //--------------------------------------------------------------------
-void AmSelAnaTree::beginJob()
+void PixSimAnaTree::beginJob()
 {
   art::ServiceHandle<art::TFileService> tfs;
   fTree = tfs->make<TTree>(fTreeName.c_str(),  fTreeName.c_str());
@@ -577,7 +577,7 @@ void AmSelAnaTree::beginJob()
 }
 
 //--------------------------------------------------------------------
-void AmSelAnaTree::ResetVars()
+void PixSimAnaTree::ResetVars()
 {
   G4Process.clear();
   G4FinalProcess.clear();
@@ -654,4 +654,4 @@ void AmSelAnaTree::ResetVars()
 
 }
 
-DEFINE_ART_MODULE(pixsim::AmSelAnaTree)
+DEFINE_ART_MODULE(pixsim::PixSimAnaTree)

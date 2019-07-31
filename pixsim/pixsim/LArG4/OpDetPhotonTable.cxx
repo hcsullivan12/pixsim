@@ -11,7 +11,7 @@
 //
 
 
-#include "amselsim/LArG4/OpDetPhotonTable.h"
+#include "pixsim/LArG4/OpDetPhotonTable.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/CryostatGeo.h"
 #include "larcorealg/Geometry/OpDetGeo.h"
@@ -20,7 +20,7 @@
 
 #include "lardataobj/Simulation/SimEnergyDeposit.h"
 
-namespace amselg4 {
+namespace pixsimg4 {
   OpDetPhotonTable * TheOpDetPhotonTable;
 
   //--------------------------------------------------
