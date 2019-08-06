@@ -58,6 +58,9 @@ namespace geo{
       virtual size_t        Nplanes() const = 0;
       virtual double        PlanePitch(size_t const& p1=0, size_t const& p2=1) const = 0;
       virtual void          GetOpDetCenter(double* xyz) const = 0;
+      virtual float         ChannelSpacing() const = 0;
+
+      virtual std::vector<float> GetChannelPosition(const int& ch) const = 0;
 
     protected:
       DetectorGeometry() = default;

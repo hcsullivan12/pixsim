@@ -1,0 +1,9 @@
+
+BEGIN_PROLOG
+
+pixsim_emptyeventfilter:
+{
+ module_type:          "EmptyEventFilter"
+}
+
+END_PROLOG

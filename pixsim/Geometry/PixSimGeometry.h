@@ -103,6 +103,7 @@ class PixSimGeometry : public geo::DetectorGeometry
     int         NPixels()          const { return fNPixels;             }
     int         NReadoutNodes()    const { return NPixels();            }
     size_t      Nchannels()        const { return NPixels();            }
+    float       ChannelSpacing()   const { return fPixelSpacing;        }
 
     const std::vector<double> PlaneLocation(size_t const& p) const { return std::vector<double>(3, 0); }
 
@@ -166,6 +167,9 @@ class PixSimGeometry : public geo::DetectorGeometry
     std::string VolumeName(geo::Point_t const& point) const;
     std::string VolumeName(TVector3 const& point) const
       { return VolumeName(geo::vect::toPoint(point)); }
+
+  
+    std::vector<float> GetChannelPosition(const int& ch) const;
 
   private:
 

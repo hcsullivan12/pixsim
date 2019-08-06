@@ -6,7 +6,6 @@ pixsim_ana:
  module_type:          "PixSimAnaTree"
  G4ModuleLabel:        "largeant"
  GenieModuleLabel:     "generator"
- MCShowerModuleLabel:  "mcreco"
 }
 
 pixsim_viewsignal:

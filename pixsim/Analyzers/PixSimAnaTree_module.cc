@@ -102,6 +102,8 @@ private:
   std::vector<double> ides_energy;
   std::vector<double> ides_tid;
   std::vector<double> ides_numElectrons;
+  std::vector<double> ides_pixel_y;
+  std::vector<double> ides_pixel_z;
 
   // Other particle information
   std::vector<int>    TrackId;
@@ -125,6 +127,8 @@ private:
 
   std::vector<int> isPrimary;	    
   std::vector<std::string> Process;
+
+
 
   std::string fTreeName;
   std::string fG4ModuleLabel;
@@ -161,6 +165,9 @@ void PixSimAnaTree::analyze(art::Event const & evt)
 
   // Detector properties service 
   auto const* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
+
+  // Geometry service
+  auto const* geom = art::ServiceHandle<geo::DetectorGeometryService>()->provider();
 
   // MC particle list
   art::Handle< std::vector<simb::MCParticle> > plistHandle;
@@ -211,6 +218,8 @@ void PixSimAnaTree::analyze(art::Event const & evt)
     for (int iCh = 0; iCh < (int)Simlist.size(); iCh++)
     {
       const auto& TDCIDEs = Simlist.at(iCh)->TDCIDEMap(); 
+      auto channel = Simlist.at(iCh)->Channel();
+      auto pixelPosition = geom->GetChannelPosition(channel);
       for (const auto& TDCinfo : TDCIDEs)
       {
         for (const auto& ide : TDCinfo.second)
@@ -221,6 +230,9 @@ void PixSimAnaTree::analyze(art::Event const & evt)
           ides_x.push_back(ide.x);
           ides_y.push_back(ide.y);
           ides_z.push_back(ide.z);
+
+          ides_pixel_y.push_back(pixelPosition[1]);
+          ides_pixel_z.push_back(pixelPosition[2]);
         }
       }
     } 
@@ -255,9 +267,9 @@ void PixSimAnaTree::analyze(art::Event const & evt)
     for (size_t iT = 0; iT < tlist.size(); iT++)
     {
       simb::GTruth truth = glist[iT];
-      nu_Vertexx.push_back(truth.fVertex.Vect().X());
-      nu_Vertexy.push_back(truth.fVertex.Vect().Y());
-      nu_Vertexz.push_back(truth.fVertex.Vect().Z());
+      nu_Vertexx.push_back(100*truth.fVertex.Vect().X()); // convert to cm
+      nu_Vertexy.push_back(100*truth.fVertex.Vect().Y()); // convert to cm
+      nu_Vertexz.push_back(100*truth.fVertex.Vect().Z()); // convert to cm
     }
     
     int geant_particle(0);
@@ -316,55 +328,7 @@ void PixSimAnaTree::analyze(art::Event const & evt)
     }//<--End loop on geant particles   
   }//<---End checking if this is MC
 
-  //
-  // Filling MC track info
-  //
-  if (!isdata)
-  {
-    art::Handle<std::vector<sim::MCTrack>> mctrackh;
-    evt.getByLabel(fMCTrackModuleLabel, mctrackh);
-
-  
-    // Check to make sure the MCShower Handle is valid 
-    if (mctrackh.isValid())
-    {
-      //  Looping over all MC Showers (using uBooNEAna method) 
-      for (std::vector<sim::MCTrack>::const_iterator imctrk = mctrkh->begin(); imctrk != mctrkh->end(); ++imctrk)
-      {
-
-        const sim::MCTrack &mctrk = *imctrk;
-
-        mctrk_origin.push_back(mctrk.Origin());
-        mctrk_pdg.push_back(mctrk.PdgCode());
-        mctrk_TrackId.push_back(mctrk.TrackID());
-        mctrk_startX.push_back(mctrk.Start().X());
-        mctrk_startY.push_back(mctrk.Start().Y());
-        mctrk_startZ.push_back(mctrk.Start().Z());
-        mctrk_endX.push_back(mctrk.End().X());
-        mctrk_endY.push_back(mctrk.End().Y());
-        mctrk_endZ.push_back(mctrk.End().Z());
-
-        mctrk_Motherpdg.push_back(mctrk.MotherPdgCode());
-        mctrk_MotherTrkId .push_back(mctrk.MotherTrackID());
-        mctrk_MotherstartX.push_back(mctrk.MotherStart().X());
-        mctrk_MotherstartY.push_back(mctrk.MotherStart().Y());
-        mctrk_MotherstartZ.push_back(mctrk.MotherStart().Z());
-        mctrk_MotherendX.push_back(mctrk.MotherEnd().X());
-        mctrk_MotherendY.push_back(mctrk.MotherEnd().Y());
-        mctrk_MotherendZ.push_back(mctrk.MotherEnd().Z());
-        mctrk_Ancestorpdg.push_back(mctrk.AncestorPdgCode());
-        mctrk_AncestorTrkId .push_back(mctrk.AncestorTrackID());
-        mctrk_AncestorstartX.push_back(mctrk.AncestorStart().X());
-        mctrk_AncestorstartY.push_back(mctrk.AncestorStart().Y());
-        mctrk_AncestorstartZ.push_back(mctrk.AncestorStart().Z());
-        mctrk_AncestorendX.push_back(mctrk.AncestorEnd().X());
-        mctrk_AncestorendY.push_back(mctrk.AncestorEnd().Y());
-        mctrk_AncestorendZ.push_back(mctrk.AncestorEnd().Z());
-      } //<---End imctrk iterator loop
-
-    } //<---Only going in if the handle is valid
-  }   //<---End only looking at MC information
-
+  if (ides_x.size() < 1000) return;
   fTree->Fill();
 }//<---End analyze()
 
@@ -426,6 +390,9 @@ void PixSimAnaTree::beginJob()
   fTree->Branch("ides_energy", &ides_energy);
   fTree->Branch("ides_tid", &ides_tid);
   fTree->Branch("ides_numElectrons", &ides_numElectrons);
+  fTree->Branch("ides_pixel_y", &ides_pixel_y);
+  fTree->Branch("ides_pixel_z", &ides_pixel_z);
+
 }
 
 //--------------------------------------------------------------------
@@ -458,6 +425,8 @@ void PixSimAnaTree::ResetVars()
   ides_energy.clear();
   ides_tid.clear();
   ides_numElectrons.clear();
+  ides_pixel_y.clear();
+  ides_pixel_z.clear();
 
   nu_pdg.clear();
   nu_ndau.clear();

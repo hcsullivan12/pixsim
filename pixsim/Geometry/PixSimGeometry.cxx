@@ -257,12 +257,25 @@ int PixSimGeometry::FindSimpleID(geo::Point_t const& point) const
   // @todo Handle this better
   //
 
-  // If the distance is greater than some threshold, return -1
+  // If the distance is greater than some threshold, something went wrong
   double diffZ = testZ - *closestZiter;
   double diffY = testY - *closestYiter;
-  if (std::sqrt(diffZ*diffZ+diffY*diffY) > 2*fPixelSpacing) return -1;
+  if (std::sqrt(diffZ*diffZ+diffY*diffY) > 2*fPixelSpacing) 
+  {
+    throw cet::exception("PixSimGeometry") << "Further than 2 pixel spacings!\n";
+  }
 
   return ((row-1) * fSimpleGeoZ.size() + column) - 1; // 0,1,2...
+}
+
+//--------------------------------------------------------------------
+std::vector<float> PixSimGeometry::GetChannelPosition(const int& ch) const
+{
+  int row = (int)(std::floor(ch/fSimpleGeoZ.size()));
+  int col = ch % fSimpleGeoZ.size();
+
+  std::vector<float> v = { 0, fSimpleGeoY[row], fSimpleGeoZ[col] };
+  return v;
 }
 
 //--------------------------------------------------------------------
