@@ -48,7 +48,7 @@ physics:
 
  analyzers:
  {
-   myana:    @local::pixsim_ana
+   #myana:    @local::pixsim_ana
  }
 
 
@@ -56,7 +56,7 @@ physics:
  #filters reject all following items.  see lines starting physics.producers below
  simulate: [ generator, largeant, rns, emptyevent ] 
 
- ana: [ myana ]
+ ana: [ ] #myana ]
  
  #define the output stream, there could be more than one if using filters 
  stream1:  [ out1 ]
@@ -78,7 +78,9 @@ outputs:
  out1:
  {
    module_type: RootOutput
-   fileName:    "genie_gen.root" #default file name, can override from command line with -o or --output
+   fileName:    "genie_gen.root" #default file name, can override from command line with -o or --output  
+   compressionLevel: 1
+   SelectEvents: [simulate]
  }
 }
 

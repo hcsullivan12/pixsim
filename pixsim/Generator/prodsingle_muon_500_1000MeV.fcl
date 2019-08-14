@@ -1,4 +1,6 @@
 #include "pixsim_services.fcl"
+#include "pixsim_anamodules.fcl"
+#include "pixsim_detsimmodules.fcl"
 
 process_name: SinglesGen
 
@@ -38,13 +40,14 @@ physics:
 
  analyzers:
 {
+  myana:    @local::pixsim_ana
 }
 
  #define the producer and filter modules for this path, order matters, 
  #filters reject all following items.  see lines starting physics.producers below
  simulate: [ generator, largeant, rns ] 
  
- ana: [ ]
+ ana: [ myana ]
  
  #define the output stream, there could be more than one if using filters 
  stream1:  [ out1 ]
@@ -68,21 +71,23 @@ outputs:
 }
 
 physics.producers.generator.PDG: [13]
-physics.producers.generator.P0: [ 0.75]
-physics.producers.generator.SigmaP: [0.25]
+physics.producers.generator.P0: [ 1.]
+physics.producers.generator.SigmaP: [0.]
 physics.producers.generator.PDist: 0
-physics.producers.generator.X0: [25]
+physics.producers.generator.X0: [100]
 physics.producers.generator.Y0: [0]
-physics.producers.generator.Z0: [-100]
+physics.producers.generator.Z0: [-300]
 physics.producers.generator.T0: [0]
-physics.producers.generator.SigmaX: [10]
-physics.producers.generator.SigmaY: [10]
+physics.producers.generator.SigmaX: [1.5]
+physics.producers.generator.SigmaY: [0]
 physics.producers.generator.SigmaZ: [0]
 physics.producers.generator.SigmaT: [0]
 physics.producers.generator.PosDist: 0
 physics.producers.generator.Theta0XZ: [0]
 physics.producers.generator.Theta0YZ: [0]
-physics.producers.generator.SigmaThetaXZ: [5.0]
-physics.producers.generator.SigmaThetaYZ: [3.3]
+physics.producers.generator.SigmaThetaXZ: [0.0]
+physics.producers.generator.SigmaThetaYZ: [0.0]
 physics.producers.generator.AngleDist: 0
 
+physics.producers.largeant.CheckOverlaps: false
+physics.producers.largeant.DumpSimChannels: false
