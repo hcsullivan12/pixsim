@@ -9,18 +9,18 @@ pixsim_detproperties:
   ElectronlifetimeTag:       ""  
   UseDatabaseForMC:          false
 
-  Temperature:        90.7  
+  Temperature:        87
   Efield:             [0.5, 0.0, 0.0]  # kv/cm
   Electronlifetime:   6800
 
   ElectronsToADC:    6.8906513e-3 # 1fC = 43.008 ADC counts for MicroBooNE  
-  NumberTimeSamples: 110000
+  NumberTimeSamples: 3530
   TimeOffsetU:       0
   TimeOffsetV:       0. 
   TimeOffsetZ:       0.
-  ReadOutWindowSize: 110000
+  ReadOutWindowSize: 3530
   InheritNumberTimeSamples: false
-  SamplingRate:      -5
+  SamplingRate:      -1.63 #0.4075
 
   SternheimerA:     0.1956  # Ar Sternheimer parameter a.
   SternheimerK:     3.0000  # Ar Sternheimer parameter k.

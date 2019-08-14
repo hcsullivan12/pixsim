@@ -208,7 +208,6 @@ namespace pixsimg4 {
     // because of the geometry set up in LArVoxelGeometry and the
     // transportation set up in PhysicsList.  Find the mid-point
     // of the step.
-
     if ( step->GetTotalEnergyDeposit() > 0 ){
 
       // Make sure we have the IonizationAndScintillation singleton
@@ -350,6 +349,7 @@ namespace pixsimg4 {
     static double RecipDriftVel[3]   = {1./fDriftVelocity[0],
                                         1./fDriftVelocity[1],
                                         1./fDriftVelocity[2]};
+
 
     struct Deposit_t {
       double energy = 0.;
@@ -534,6 +534,7 @@ namespace pixsimg4 {
             /// \todo beyond the end of the expected number of ticks
             // Add potential decay/capture/etc delay effect, simTime.
             unsigned int tdc = fClock.Ticks(ts->G4ToElecTime(TDiff + simTime));
+
             // Add electrons produced by each cluster to the map
             DepositsToStore[channel][tdc].add(nEnDiff[k], nElDiff[k]);
           }

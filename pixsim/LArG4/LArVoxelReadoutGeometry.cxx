@@ -500,7 +500,7 @@ namespace pixsimg4 {
     //  MF_LOG_DEBUG("LArVoxelReadoutGeometry") << d->GetName() << ":" << mother->GetName();
       if(d->GetName().contains(daughterName)){
 
-        /*// check that this cryostat is the requested one using fCryostat
+        // check that this cryostat is the requested one using fCryostat
         G4ThreeVector translation = d->GetObjectTranslation();
         G4RotationMatrix rotation = d->GetObjectRotationValue();
         G4Transform3D transform(rotation, translation);
@@ -519,7 +519,7 @@ namespace pixsimg4 {
                                              << world.y() / CLHEP::cm << ","
                                              << world.z() / CLHEP::cm << ")";
 
-        // we don't bother with the cryostat number when calling Geometry::PositionToTPC
+        /*// we don't bother with the cryostat number when calling Geometry::PositionToTPC
         // because we know we have already started off with the correct cryostat volume
         // G4 uses mm, we want cm
         double worldPos[3] = { world.x() / CLHEP::cm, world.y() / CLHEP::cm, world.z() / CLHEP::cm };

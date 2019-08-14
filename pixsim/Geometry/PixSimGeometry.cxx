@@ -217,6 +217,7 @@ void PixSimGeometry::GetOpDetCenter(double* xyz) const
 }
 
 //--------------------------------------------------------------------
+// @note Haven't understood why yet, but point is in local coordinates
 int PixSimGeometry::NearestPixelID(geo::Point_t const& point) const
 {
   // Check for simplified geometry
@@ -256,7 +257,6 @@ int PixSimGeometry::FindSimpleID(geo::Point_t const& point) const
   //
   // @todo Handle this better
   //
-
   // If the distance is greater than some threshold, something went wrong
   double diffZ = testZ - *closestZiter;
   double diffY = testY - *closestYiter;

@@ -32,6 +32,7 @@
 #include "lardataobj/Simulation/SimPhotons.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/GTruth.h"
+#include "CLHEP/Units/SystemOfUnits.h"
 
 // ROOT includes 
 #include "TFile.h"
@@ -102,8 +103,9 @@ private:
   std::vector<double> ides_energy;
   std::vector<double> ides_tid;
   std::vector<double> ides_numElectrons;
-  std::vector<double> ides_pixel_y;
-  std::vector<double> ides_pixel_z;
+  std::vector<double> ides_voxel_x;
+  std::vector<double> ides_voxel_y;
+  std::vector<double> ides_voxel_z;
 
   // Other particle information
   std::vector<int>    TrackId;
@@ -181,8 +183,9 @@ void PixSimAnaTree::analyze(art::Event const & evt)
 
   // G truth 
   art::Handle< std::vector<simb::GTruth> > glistHandle;
-  evt.getByLabel(fGenieModuleLabel, glistHandle);
-  auto glist = *glistHandle;
+  std::vector<art::Ptr<simb::GTruth> > glist;
+  if(evt.getByLabel(fGenieModuleLabel, glistHandle))
+    {art::fill_ptr_vector(glist, glistHandle);}
 
   // Sim channels
   art::Handle< std::vector<sim::SimChannel> > SimListHandle;
@@ -214,6 +217,7 @@ void PixSimAnaTree::analyze(art::Event const & evt)
   //
   if (!isdata)
   {
+    int num(0);
     // Loop over channels
     for (int iCh = 0; iCh < (int)Simlist.size(); iCh++)
     {
@@ -224,6 +228,7 @@ void PixSimAnaTree::analyze(art::Event const & evt)
       {
         for (const auto& ide : TDCinfo.second)
         {
+          num++;
           ides_tid.push_back(ide.trackID);
           ides_numElectrons.push_back(ide.numElectrons);
           ides_energy.push_back(ide.energy); 
@@ -231,8 +236,11 @@ void PixSimAnaTree::analyze(art::Event const & evt)
           ides_y.push_back(ide.y);
           ides_z.push_back(ide.z);
 
-          ides_pixel_y.push_back(pixelPosition[1]);
-          ides_pixel_z.push_back(pixelPosition[2]);
+          float ticks = detprop->ConvertTDCToTicks(TDCinfo.first);
+          float x = detprop->ConvertTicksToX(ticks,0,0,0);
+          ides_voxel_x.push_back(x);
+          ides_voxel_y.push_back(pixelPosition[1]);
+          ides_voxel_z.push_back(pixelPosition[2]);
         }
       }
     } 
@@ -244,7 +252,6 @@ void PixSimAnaTree::analyze(art::Event const & evt)
     {
       simb::MCNeutrino nu   = tlist[iT].GetNeutrino();
       simb::MCParticle mcnu = nu.Nu(); 
-    
       nu_pdg.push_back(mcnu.PdgCode());
       nu_ndau.push_back(mcnu.NumberDaughters());
       nu_ccnc.push_back(nu.CCNC());
@@ -263,13 +270,15 @@ void PixSimAnaTree::analyze(art::Event const & evt)
       nu_EndPy      .push_back(mcnu.EndMomentum().Vect().Y());
       nu_EndPz      .push_back(mcnu.EndMomentum().Vect().Z());
     }//<-- End loop over truth information
-
-    for (size_t iT = 0; iT < tlist.size(); iT++)
-    {
-      simb::GTruth truth = glist[iT];
-      nu_Vertexx.push_back(100*truth.fVertex.Vect().X()); // convert to cm
-      nu_Vertexy.push_back(100*truth.fVertex.Vect().Y()); // convert to cm
-      nu_Vertexz.push_back(100*truth.fVertex.Vect().Z()); // convert to cm
+    if(glist.size())
+    { 
+      for (size_t iT = 0; iT < tlist.size(); iT++)
+      {
+        auto truth = glist.at(iT);
+        nu_Vertexx.push_back(100*truth->fVertex.Vect().X()); // convert to cm
+        nu_Vertexy.push_back(100*truth->fVertex.Vect().Y()); // convert to cm
+        nu_Vertexz.push_back(100*truth->fVertex.Vect().Z()); // convert to cm
+      }
     }
     
     int geant_particle(0);
@@ -306,6 +315,7 @@ void PixSimAnaTree::analyze(art::Event const & evt)
 	    EndPx.push_back(plist[i].EndPx());
 	    EndPy.push_back(plist[i].EndPy());
 	    EndPz.push_back(plist[i].EndPz());
+
 	   
 	    // Saving the Start and End Point for this particle 
 	    StartPointx.push_back(plist[i].Vx());
@@ -315,7 +325,8 @@ void PixSimAnaTree::analyze(art::Event const & evt)
 	    EndPointy.push_back(plist[i].EndPosition()[1]);
 	    EndPointz.push_back(plist[i].EndPosition()[2]);
  	   
-	    // Saving the number of Daughters for this particle 
+          	  
+  // Saving the number of Daughters for this particle 
       std::vector<int> tempDtr;
       for(unsigned int iDtr = 0; iDtr < plist.size(); ++iDtr)
       {
@@ -390,8 +401,9 @@ void PixSimAnaTree::beginJob()
   fTree->Branch("ides_energy", &ides_energy);
   fTree->Branch("ides_tid", &ides_tid);
   fTree->Branch("ides_numElectrons", &ides_numElectrons);
-  fTree->Branch("ides_pixel_y", &ides_pixel_y);
-  fTree->Branch("ides_pixel_z", &ides_pixel_z);
+  fTree->Branch("ides_voxel_x", &ides_voxel_x);
+  fTree->Branch("ides_voxel_y", &ides_voxel_y);
+  fTree->Branch("ides_voxel_z", &ides_voxel_z);
 
 }
 
@@ -425,8 +437,9 @@ void PixSimAnaTree::ResetVars()
   ides_energy.clear();
   ides_tid.clear();
   ides_numElectrons.clear();
-  ides_pixel_y.clear();
-  ides_pixel_z.clear();
+  ides_voxel_x.clear();
+  ides_voxel_y.clear();
+  ides_voxel_z.clear();
 
   nu_pdg.clear();
   nu_ndau.clear();

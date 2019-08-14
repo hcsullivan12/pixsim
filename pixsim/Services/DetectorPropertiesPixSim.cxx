@@ -190,6 +190,8 @@ namespace ldp{
     
     fSamplingRate               = config.SamplingRate();
     if( fSamplingRate <= 0 )    fSamplingRate = fTPCClock.TickPeriod() * 1.e3;
+
+    CalculateXTicksParams();
   } // DetectorPropertiesPixSim::Configure()
   
   //--------------------------------------------------------------------
@@ -506,6 +508,38 @@ namespace ldp{
     if (!fGeo) throw cet::exception(__FUNCTION__) << "Geometry is uninitialized!";
     if (!fLP) throw cet::exception(__FUNCTION__) << "LArPropertiesPixSim is uninitialized!";
     if (!fClocks) throw cet::exception(__FUNCTION__) << "DetectorClocks is uninitialized!";
+  }
+
+  //--------------------------------------------------------------------
+  void DetectorPropertiesPixSim::CalculateXTicksParams()
+  {
+    CheckIfConfigured();
+
+    double samplingRate   = SamplingRate();
+    double efield         = Efield();
+    double temperature    = Temperature();
+    double driftVelocity  = DriftVelocity(efield, temperature);
+
+    // HARD CODING DRIFT VELOCITY
+    driftVelocity = 0.163;
+
+    fXTicksCoefficient    = 0.001 * driftVelocity * samplingRate;
+
+    fXTicksOffsets.clear();
+    fXTicksOffsets.resize(fGeo->Ncryostats());
+
+    fDriftDirection.clear();
+    fDriftDirection.resize(fGeo->Ncryostats());
+
+    fXTicksOffsets[0].resize(fGeo->NTPC());
+    fDriftDirection[0].resize(fGeo->NTPC());
+
+    // temporary fix: for drift towards x=0 this is -1*fGeo->DriftDirection
+    fDriftDirection[0][0] = -1*fGeo->DriftDirection();
+   
+    fXTicksOffsets[0][0].resize(1, 0.); 
+
+    fXTicksOffsets[0][0][0] = 0;
   }
 
   //--------------------------------------------------------------------

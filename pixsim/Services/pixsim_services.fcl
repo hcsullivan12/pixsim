@@ -46,7 +46,7 @@ pixsim_simulation_services.LArG4Parameters.EnabledPhysics: [ "Em", "SynchrotronA
 pixsim_simulation_services.LArPropertiesService.ScintPreScale: 1.0
 pixsim_simulation_services.LArPropertiesService.ScintByParticleType: true
 
-pixsim_simulation_services.DetectorClocksService.ClockSpeedTPC: 5
+pixsim_simulation_services.DetectorClocksService.ClockSpeedTPC: 1.63 #0.4075
 #pixsim_simulation_services.DetectorClocksService.FramePeriod: 409.6
 
 pixsim_simulation_services.LArFFT.FFTSize: 0
