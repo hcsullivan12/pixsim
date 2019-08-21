@@ -24,4 +24,6 @@ dunefd_genie_simple_neutrino:             @local::dunefd_genie
 dunefd_genie_simple_neutrino.TopVolume:   "volDetEnclosure"
 
 
+pixsim_ndk: @local::standard_ndk
+
 END_PROLOG

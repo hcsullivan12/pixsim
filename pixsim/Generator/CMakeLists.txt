@@ -1,3 +1,3 @@
 add_subdirectory(GENIE)
-
-install_fhicl()
+add_subdirectory(MARLEY)
+add_subdirectory(singles)

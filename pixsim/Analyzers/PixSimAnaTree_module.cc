@@ -178,8 +178,9 @@ void PixSimAnaTree::analyze(art::Event const & evt)
 
   // MC truth 
   art::Handle< std::vector<simb::MCTruth> > tlistHandle;
-  evt.getByLabel(fGenieModuleLabel, tlistHandle);
-  auto tlist = *tlistHandle;
+  std::vector<art::Ptr<simb::MCTruth>> tlist;
+  if(evt.getByLabel(fGenieModuleLabel, tlistHandle))
+  {art::fill_ptr_vector(tlist, tlistHandle);}
 
   // G truth 
   art::Handle< std::vector<simb::GTruth> > glistHandle;
@@ -248,29 +249,35 @@ void PixSimAnaTree::analyze(art::Event const & evt)
     // Fill neutrino information
     if (tlist.size() > 1) throw cet::exception("PixSimAnaTree") << "MCTruth list greater than 1\n";
     if (glist.size() > 1) throw cet::exception("PixSimAnaTree") << "GTruth list greater than 1\n";
-    for (size_t iT = 0; iT < tlist.size(); iT++)
+
+    if(evt.getByLabel(fGenieModuleLabel, tlistHandle)) 
     {
-      simb::MCNeutrino nu   = tlist[iT].GetNeutrino();
-      simb::MCParticle mcnu = nu.Nu(); 
-      nu_pdg.push_back(mcnu.PdgCode());
-      nu_ndau.push_back(mcnu.NumberDaughters());
-      nu_ccnc.push_back(nu.CCNC());
-      nu_mode.push_back(nu.Mode());
-      nu_inttype.push_back(nu.InteractionType());
-      nu_StartPointx.push_back(mcnu.Position().Vect().X());
-      nu_StartPointy.push_back(mcnu.Position().Vect().Y());
-      nu_StartPointz.push_back(mcnu.Position().Vect().Z());
-      nu_EndPointx  .push_back(mcnu.EndPosition().Vect().X());
-      nu_EndPointy  .push_back(mcnu.EndPosition().Vect().Y());
-      nu_EndPointz  .push_back(mcnu.EndPosition().Vect().Z());
-      nu_StartPx    .push_back(mcnu.Momentum().Vect().X());
-      nu_StartPy    .push_back(mcnu.Momentum().Vect().Y());
-      nu_StartPz    .push_back(mcnu.Momentum().Vect().Z());
-      nu_EndPx      .push_back(mcnu.EndMomentum().Vect().X());
-      nu_EndPy      .push_back(mcnu.EndMomentum().Vect().Y());
-      nu_EndPz      .push_back(mcnu.EndMomentum().Vect().Z());
+      for (size_t iT = 0; iT < tlist.size(); iT++)
+      {
+        if(!tlist[iT]->NeutrinoSet())continue;
+        simb::MCNeutrino nu   = tlist[iT]->GetNeutrino();
+        simb::MCParticle mcnu = nu.Nu(); 
+        nu_pdg.push_back(mcnu.PdgCode());
+        nu_ndau.push_back(mcnu.NumberDaughters());
+        nu_ccnc.push_back(nu.CCNC());
+        nu_mode.push_back(nu.Mode());
+        nu_inttype.push_back(nu.InteractionType());
+        nu_StartPointx.push_back(mcnu.Position().Vect().X());
+        nu_StartPointy.push_back(mcnu.Position().Vect().Y());
+        nu_StartPointz.push_back(mcnu.Position().Vect().Z());
+        nu_EndPointx  .push_back(mcnu.EndPosition().Vect().X());
+        nu_EndPointy  .push_back(mcnu.EndPosition().Vect().Y());
+        nu_EndPointz  .push_back(mcnu.EndPosition().Vect().Z());
+        nu_StartPx    .push_back(mcnu.Momentum().Vect().X());
+        nu_StartPy    .push_back(mcnu.Momentum().Vect().Y());
+        nu_StartPz    .push_back(mcnu.Momentum().Vect().Z());
+        nu_EndPx      .push_back(mcnu.EndMomentum().Vect().X());
+        nu_EndPy      .push_back(mcnu.EndMomentum().Vect().Y());
+        nu_EndPz      .push_back(mcnu.EndMomentum().Vect().Z());
+      }
     }//<-- End loop over truth information
-    if(glist.size())
+    
+    if(evt.getByLabel(fGenieModuleLabel, glistHandle))
     { 
       for (size_t iT = 0; iT < tlist.size(); iT++)
       {
@@ -319,8 +326,8 @@ void PixSimAnaTree::analyze(art::Event const & evt)
 	   
 	    // Saving the Start and End Point for this particle 
 	    StartPointx.push_back(plist[i].Vx());
-	    StartPointy.push_back(plist[i].Vx());
-	    StartPointz.push_back(plist[i].Vx());
+	    StartPointy.push_back(plist[i].Vy());
+	    StartPointz.push_back(plist[i].Vz());
 	    EndPointx.push_back(plist[i].EndPosition()[0]);
 	    EndPointy.push_back(plist[i].EndPosition()[1]);
 	    EndPointz.push_back(plist[i].EndPosition()[2]);

@@ -85,7 +85,7 @@ argoneut_genie_simple_antineutrino.FluxFiles: ["argoneut/gsimple_ArgoNeuT_le010z
 #2016 PDG numbering scheme in pp.8-10 of http://www-pdg.lbl.gov/2016/listings/rpp2016-list-p.pdf (tau1 through tau60)
 standard_ndk:
 {
- module_type:      "NucleonDecay"
+ module_type:      "GenNucleonDecay"
  DecayMode:        19
  DecayedNucleon:   2212
 }
