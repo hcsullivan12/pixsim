@@ -2,12 +2,15 @@ import bempp.api
 import numpy as np
 import pixsim.bem as bem
 
-def linear(mshfile, sol, 
+def linear(mshfile, sol, points=None,
            linspaces = ( (0,2,100), (-3,3,100), (2,8,100) ), 
            **kwds):
     '''
     Evaluate the potential on a linear grid space.
     '''
+
+    # setting bem accuracy knobs
+    kwds = bem.knobs(**kwds)
 
     # import the mesh
     grid = bempp.api.import_grid(mshfile)
@@ -18,7 +21,8 @@ def linear(mshfile, sol,
     # define our points
     linspaces = [np.linspace(*ls) for ls in linspaces]
     mgrid = np.meshgrid(*linspaces, indexing='ij')
-    points = np.vstack([mgrid[i].ravel() for i in range(3)])
+    if points is None:
+           points = np.vstack([mgrid[i].ravel() for i in range(3)])
 
     # evaluate on our space
     print 'Evaluating...'
@@ -29,6 +33,7 @@ def linear(mshfile, sol,
     print 'u_evaluated.shape=',u_evaluated.shape, u_evaluated.T[0], points.T[0]
     u_reshaped = u_evaluated.reshape(mgrid[0].shape)
     print 'u_reshaped.shape=',u_reshaped.shape
+    print mgrid[0].shape, points.shape, len(points)
 
     dxyz = [(ls[1]-ls[0])/(ls[2]-1) for ls in linspaces]
     u_grad = np.asarray(np.gradient(u_reshaped, *dxyz))
@@ -45,8 +50,6 @@ def linear(mshfile, sol,
             print x,y,z
 
     from pixsim.models import Array
-    return [ Array(typename='linspace', name='bins',     data = np.asarray(linspaces)),
-             Array(typename='mgrid',    name='domain',   data = np.asarray(mgrid)),
-             Array(typename='gscalar',  name='scalar',   data = u_reshaped),
+    return [ Array(typename='gscalar',  name='scalar',   data = u_reshaped),
              Array(typename='gvector',  name='gradient', data = u_grad),
              Array(typename='points',   name='points',   data = points) ]
