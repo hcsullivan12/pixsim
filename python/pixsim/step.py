@@ -384,7 +384,7 @@ class Stepper(object):
 
 def step(vfield, linspaces,
          step_range = ( (1.5,1.5), (-1,1), (4,6) ),
-         step_size  = (0.1, 0.1, 0.1),
+         step_inc   = (0.1, 0.1, 0.1),
          start_time = 0.0,
          lcar       = 0.01,
          stuck      = 0.01,
@@ -393,7 +393,7 @@ def step(vfield, linspaces,
     Return paths stepped through vfield starting at many points on a
     rectangular patch given by range = ( (xmin, xmax, step), ... ).  
     '''
-
+    print lcar, stuck
     # define stepping function
     step_fun = eval("step_%s" % stepper) 
 
@@ -407,7 +407,7 @@ def step(vfield, linspaces,
 
     xl, yl, zl = step_range
     xr, yr, zr = xl[1]-xl[0], yl[1]-yl[0], zl[1]-zl[0]
-    xs, ys, zs = step_size
+    xs, ys, zs = step_inc
 
     # we will take x as a constat
     x = xl[0]
@@ -424,6 +424,7 @@ def step(vfield, linspaces,
             position = (x,y,z)
             visitor = stepper(start_time, position, CollectSteps(StuckDetection(distance=stuck)))
             paths.append( Array(typename='points', name=name, data=visitor.array) )
+            print 'Stepped',len(visitor.array),' times from (',x,',',y,',',z,') to (',visitor.array[-1][0],',',visitor.array[-1][1],',',visitor.array[-1][2],')'
     return paths
 
 

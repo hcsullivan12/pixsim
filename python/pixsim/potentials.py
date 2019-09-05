@@ -19,9 +19,9 @@ class field_cage(object):
             print 'Domain index not found:',domain_index
 
         if name == 'walls':
-            result[0] = self.anode_v + self.efield * r[0] 
+            result[0] = self.anode_v - self.efield * r[0] 
         elif name == 'cathode':
-            result[0] = self.anode_v + self.efield * self.drift_length
+            result[0] = self.anode_v - self.efield * self.drift_length
         elif name == 'anode':
             result[0] = self.anode_v
         else:
