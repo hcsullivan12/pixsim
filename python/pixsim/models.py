@@ -87,7 +87,7 @@ class Result(Base):
     created = Column(types.TIMESTAMP, default=datetime.now)
 
     data   = relationship("Array", secondary=subs, backref="arrays")
-    parent = relationship("Result")
+    parent = relationship("Result", remote_side=[id])
 
     def array_data_by_type(self):
         '''

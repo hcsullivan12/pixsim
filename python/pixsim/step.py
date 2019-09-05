@@ -393,7 +393,6 @@ def step(vfield, linspaces,
     Return paths stepped through vfield starting at many points on a
     rectangular patch given by range = ( (xmin, xmax, step), ... ).  
     '''
-    print lcar, stuck
     # define stepping function
     step_fun = eval("step_%s" % stepper) 
 
