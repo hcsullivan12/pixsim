@@ -130,24 +130,24 @@ def cmd_plot_boundary(ctx, typename, config, qyantity):
 @click.option("-c","--config", default='raster', type=str, help="Section name in config.")
 @click.option('-n','--name', default='raster', type=str, help='Name of result.')
 @click.pass_context
-def cmd_boundary(ctx, source, config, name):
+def cmd_raster(ctx, source, config, name):
     '''
     Evaluate solution on a raster of points.
     '''
     ses = ctx.obj['session']
-    results = get_result(ses, typename=source, id=None)
-    if results is None:
+    result = get_result(ses, typename=source, id=None)
+    if result is None:
         click.echo("No matching results for typename = {}".format(source))
         return
 
     # get the solution
     sol = None
-    for res in results.data:
+    for res in result.data:
         if res.typename == 'scalar':
             sol = res.data
     from pixsim.raster import linear
     arrays = linear(ctx.obj['mesh_filename'], sol, **ctx.obj['cfg'])
-    res = Result(name=name, typename='raster', data=arrays)
+    res = Result(name=name, typename='raster', data=arrays, parent=result)
     save_result(ctx, res)
 
 @cli.command("velocity")
@@ -161,13 +161,13 @@ def cmd_velocity(ctx, source, config, name):
     '''
 
     ses = ctx.obj['session']
-    results = get_result(ses, source, None)
-    if results is None:
+    result = get_result(ses, source, None)
+    if result is None:
         click.echo("No matching results for typename = {}".format(source))
         return
 
     potential, linspace = None, None
-    for res in results.data:
+    for res in result.data:
         if res.typename == 'linspace':
             linspace = res.data
         if res.typename == 'gscalar':
@@ -176,11 +176,11 @@ def cmd_velocity(ctx, source, config, name):
 
     import pixsim.velocity as velocity
     arrays = velocity.drift(potential, linspace, **ctx.obj['cfg'])
-    res = Result(name=name, typename='drift', data=arrays)
+    res = Result(name=name, typename='drift', data=arrays, parent=result)
     save_result(ctx, res)
 
 @cli.command("step")
-@click.option("-s","--source", nargs=2, default=['drift', 'raster'], type=str, help="Typename of results to source.")
+@click.option("-s","--source", default='drift', type=str, help="Typename of results to source.")
 @click.option("-c","--config", default='step', type=str, help="Section name in config.")
 @click.option('-n','--name', default='paths', type=str, help='Name of result.')
 @click.pass_context
@@ -189,27 +189,27 @@ def cmd_step(ctx, source, config, name):
     Step through velocity field.
     '''
     ses = ctx.obj['session']
-    drift_results = get_result(ses, source[0], None)
-    rast_results = get_result(ses, source[1], None)
-    if drift_results is None:
-        click.echo("No matching results for typename = {}".format(source[0]))
+    drift_result = get_result(ses, source, None)
+    if drift_result is None:
+        click.echo("No matching results for typename = {}".format(source))
         return
-    if rast_results is None:
-        click.echo("No matching results for typename = {}".format(source[1]))
+    rast_result  = get_result(ses, None, drift_result.parent_id)
+    if rast_result is None:
+        click.echo("No matching results for parent ID = {}".format(drift_result.parent_id))
         return
     
     vfield, linspace = None, None
-    for res in drift_results.data:
+    for res in drift_result.data:
         if res.typename == 'gvector':
             vfield = res.data
-    for res in rast_results.data:
+    for res in rast_result.data:
         if res.typename == 'linspace':
             linspace = res.data
     assert(vfield is not None and linspace is not None and 'Results were not found')
     
     import pixsim.step as step
     arrays = step.step(vfield, linspace, **ctx.obj['cfg'][config])
-    res = Result(name=name, typename='step', data=arrays)
+    res = Result(name=name, typename='step', data=arrays, parent=drift_result)
     save_result(ctx, res)
 
 @cli.command("delete")

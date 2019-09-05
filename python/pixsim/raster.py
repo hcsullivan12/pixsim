@@ -41,6 +41,7 @@ def linear(mshfile, sol,
     u_grad /= 1000.
 
     from pixsim.models import Array
-    return [ Array(typename='gscalar',  name='scalar',   data = u_reshaped),
+    return [ Array(typename='linspace', name='bins',     data = linspaces),
+             Array(typename='gscalar',  name='scalar',   data = u_reshaped),
              Array(typename='gvector',  name='gradient', data = u_grad),
              Array(typename='points',   name='points',   data = points) ]
