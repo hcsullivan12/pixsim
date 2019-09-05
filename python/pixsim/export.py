@@ -1,10 +1,16 @@
 import meshio
 import numpy 
 
-def save_boundary_vtk(result, mshfile, outname):
+def save_boundary_vtk(ses, mshfile, outname):
     '''
     Save a boundary result into a VTK file.
     '''
+    print 'Saving boundary results...'
+    res_id = input('Enter the boundary result ID: ')
+    result = get_result(ses, None, res_id)
+    if result is None:
+        print 'No matching results for ID = {}'.format(res_id)
+        return
     mesh = meshio.read(mshfile)
     barrs = result.array_data_by_name()
 
@@ -20,10 +26,16 @@ def save_boundary_vtk(result, mshfile, outname):
     outname = outname+'.vtk'
     write_data(pd, outname)
 
-def save_raster_vtk(result, outname):
+def save_raster_vtk(ses, outname):
     '''
     Save a drift result into a VTK file.
     '''
+    print 'Saving raster results...'
+    res_id = input('Enter the raster result ID: ')
+    result = get_result(ses, None, res_id)
+    if result is None:
+        print 'No matching results for ID = {}'.format(res_id)
+        return
     arrs = result.array_data_by_name()
     points = arrs['points'].T
 
@@ -55,14 +67,20 @@ def save_raster_vtk(result, outname):
         fname = '%s-%s.vtk' % (outname, thing)
         write_data(ug, fname)
 
-def save_step_vtk(result, outname):
+def save_step_vtk(ses, outname):
     '''
     Save a step result into a VTK file.
     '''
+    print 'Saving stepping results...'
+    res_id = input('Enter the step result ID: ')
+    result = get_result(ses, None, res_id)
+    if result is None:
+        print 'No matching results for ID = {}'.format(res_id)
+        return
 
     paths = list(result.data)
     points = list()
-    vel    = list()
+    pot    = list()
     for path in paths:
         for pt,v in zip(path.data[:,0:3],path.data[:,3:4]):
             points.append(pt)
@@ -87,15 +105,15 @@ def save_step_vtk(result, outname):
     fname = '%s-%s.vtk' % (outname, 'paths')
     write_data(ug, fname)
 
-def export(result, save, mshfile, outname):
+def export(ses, mshfile, save, outname):
     '''
     Determine which exporter to call.
     '''
     if save == 'raster':
-        save_raster_vtk(result, outname)
+        save_raster_vtk(ses, outname)
     elif save == 'boundary':
-        save_boundary_vtk(result, mshfile, outname)
+        save_boundary_vtk(ses, mshfile, outname)
     elif save == 'step':
-        save_step_vtk(result, outname)
+        save_step_vtk(ses, outname)
     else:
         print 'No methods implented for',save

@@ -72,20 +72,22 @@ array_types = [
 
 subs = Table('subs',
     Base.metadata,
-    Column("result_id", Integer, ForeignKey("results.id")),
-    Column("array_id", Integer, ForeignKey("arrays.id"))
+    Column("result_id", Integer, ForeignKey("result.id")),
+    Column("array_id", Integer, ForeignKey("array.id"))
 )
 
 class Result(Base):
-    __tablename__ = 'results'
+    __tablename__ = 'result'
     
     id = Column(Integer, primary_key=True)
+    parent_id = Column(Integer, ForeignKey('result.id'))
     name = Column(String, default='')
     typename = Column(Enum(*result_types))
-    params = Column(JSONBLOB, default='[]')
+    #params = Column(JSONBLOB, default='[]')
     created = Column(types.TIMESTAMP, default=datetime.now)
 
-    data = relationship("Array", secondary=subs, backref="arrays")
+    data   = relationship("Array", secondary=subs, backref="arrays")
+    parent = relationship("Result")
 
     def array_data_by_type(self):
         '''
@@ -106,7 +108,7 @@ class Result(Base):
         
 
 class Array(Base):
-    __tablename__ = 'arrays'
+    __tablename__ = 'array'
 
     id = Column(Integer, primary_key=True)
     name = Column(String, default='')

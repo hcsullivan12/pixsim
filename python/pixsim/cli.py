@@ -129,9 +129,8 @@ def cmd_plot_boundary(ctx, typename, config, qyantity):
 @click.option("-s","--source", default='boundary', type=str, help="Typename of results to source.")
 @click.option("-c","--config", default='raster', type=str, help="Section name in config.")
 @click.option('-n','--name', default='raster', type=str, help='Name of result.')
-@click.option('-p','--point_res', default=None, type=int, help='Result ID of points from stepping, otherwise uses linspace.')
 @click.pass_context
-def cmd_boundary(ctx, source, config, name, point_res):
+def cmd_boundary(ctx, source, config, name):
     '''
     Evaluate solution on a raster of points.
     '''
@@ -140,26 +139,14 @@ def cmd_boundary(ctx, source, config, name, point_res):
     if results is None:
         click.echo("No matching results for typename = {}".format(source))
         return
-    
-    # option to evaluate on points from steps 
-    points = None
-    if point_res is not None:
-        paths = get_array(ses, None, point_res)
-        if paths is None:
-            click.echo("No matching results for points (result id) = {}".format(point_res))
-            return
-        for path in list(paths.data):
-            for pt in path.data[:,0:3]
-                points.append(pt)
-        points = numpy.asarray(points)
 
-    from pixsim.raster import linear
     # get the solution
     sol = None
     for res in results.data:
         if res.typename == 'scalar':
             sol = res.data
-    arrays = linear(ctx.obj['mesh_filename'], sol, points, **ctx.obj['cfg'])
+    from pixsim.raster import linear
+    arrays = linear(ctx.obj['mesh_filename'], sol, **ctx.obj['cfg'])
     res = Result(name=name, typename='raster', data=arrays)
     save_result(ctx, res)
 
@@ -287,21 +274,16 @@ def cmd_rename(ctx, result_id, array_id, name):
         ses.commit()
 
 @cli.command("export")
-@click.option("-r","--result_id", type=int, required=True, help="Result ID to save.")
 @click.option("-s","--save", type=str, required=True, help="Type of result to save.")
 @click.option("-o","--output", type=str, required=True, help="Name of output file(s).")
 @click.pass_context
 def cmd_export(ctx, result_id, save, output):
     '''
-    Export result to VTK format.
+    Since this can get more and more involved, it will be easier to prompt user.
     '''
     ses = ctx.obj['session']
-    result = get_result(ses, None, result_id)
-    if result is None:
-        click.echo("No matching result result_id = {}".format(result_id))
-        return
     import pixsim.export as export
-    export.export(result, save, ctx.obj['mesh_filename'], output)
+    export.export(ses, ctx.obj['mesh_filename'], save, output)
       
 @cli.command("update")
 @click.pass_context
