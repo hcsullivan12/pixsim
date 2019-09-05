@@ -1,4 +1,0 @@
-Click
-meshio
-SQLAlchemy
-networkx
