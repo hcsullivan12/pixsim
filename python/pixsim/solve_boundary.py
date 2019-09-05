@@ -44,8 +44,7 @@ def solve_boundary(mshfile, **kwds):
     dirichlet_fun = bempp.api.GridFunction(piecewise_const_space, fun=drift_pot)
     rhs = dirichlet_fun
     lhs = slp
-    neumann_fun, info = bempp.api.linalg.cg(slp, rhs, tol=1E-3)
-    print 'here', slp
+    #neumann_fun, info = bempp.api.linalg.cg(slp, rhs, tol=1E-3)
     sol, info, residuals = bempp.api.linalg.gmres(slp, rhs, tol=1E-6, return_residuals=True, use_strong_form=True)
 
     from pixsim.models import Array

@@ -1,6 +1,6 @@
 import bempp.api
 import numpy as np
-import pixsim.operators as operators
+import pixsim.bem as bem
 
 def linear(mshfile, sol, 
            linspaces = ( (0,2,100), (-3,3,100), (2,8,100) ), 
@@ -35,6 +35,14 @@ def linear(mshfile, sol,
 
     # convert efield to kV to help later
     u_grad /= 1000.
+    print u_grad.shape
+    x = u_grad[0:,:,:,:].reshape(u_grad[0].size)
+    y = u_grad[1:,:,:,:].reshape(u_grad[1].size)
+    z = u_grad[2:,:,:,:].reshape(arr[2].siza)
+
+    for x,y,z in zip(u_grad[0,:,:,:], u_grad[1,:,:,:], u_grad[2,:,:,:]):
+        if abs(y) > abs(x):
+            print x,y,z
 
     from pixsim.models import Array
     return [ Array(typename='linspace', name='bins',     data = np.asarray(linspaces)),
