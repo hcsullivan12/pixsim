@@ -13,7 +13,7 @@ def solve_boundary(mshfile, **kwds):
     '''
 
     # setting bem accuracy knobs
-    kwds = bem.knobs(**kwds)
+    #kwds = bem.knobs(**kwds)
 
     # import the mesh
     grid = bempp.api.import_grid(mshfile)
@@ -21,17 +21,12 @@ def solve_boundary(mshfile, **kwds):
 
     # try to extract high level information from mesh
     # e.g. domains, tpc dimensions
-    anode_seg   = mesh.field_data['anode'][0]
-    cathode_seg = mesh.field_data['cathode'][0]
-    walls_seg   = mesh.field_data['walls'][0]
+    domains = dict()
+    for n,v in mesh.field_data.iteritems():
+      domains[v[0]] = n
     height        = abs( mesh.points[:,1].max()-mesh.points[:,1].min() ) # cm
     width         = abs( mesh.points[:,2].max()-mesh.points[:,2].min() ) # cm
     drift_length  = abs( mesh.points[:,0].max()-mesh.points[:,0].min() ) # cm
-    
-    domains, pot = dict(), dict()
-    domains[anode_seg]   = 'anode'
-    domains[cathode_seg] = 'cathode'
-    domains[walls_seg]   = 'walls' 
     
     drift_pot = potentials.field_cage(domains, drift_length, **kwds)
 
