@@ -277,7 +277,7 @@ def cmd_rename(ctx, result_id, array_id, name):
 @click.option("-s","--save", type=str, required=True, help="Type of result to save.")
 @click.option("-o","--output", type=str, required=True, help="Name of output file(s).")
 @click.pass_context
-def cmd_export(ctx, result_id, save, output):
+def cmd_export(ctx, save, output):
     '''
     Since this can get more and more involved, it will be easier to prompt user.
     '''

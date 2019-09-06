@@ -1,5 +1,7 @@
 import meshio
 import numpy 
+from pixsim.store import get_result
+from pixsim.vector import Scalar
 
 def save_boundary_vtk(ses, mshfile, outname):
     '''
@@ -72,21 +74,41 @@ def save_step_vtk(ses, outname):
     Save a step result into a VTK file.
     '''
     print 'Saving stepping results...'
-    res_id = input('Enter the step result ID: ')
-    result = get_result(ses, None, res_id)
-    if result is None:
-        print 'No matching results for ID = {}'.format(res_id)
+    step_id = input('Enter the step result ID: ')
+    step_res = get_result(ses, None, step_id)
+    if step_res is None:
+        print 'No matching results for ID = {}'.format(step_id)
         return
 
-    paths = list(result.data)
+    # we need the raster data
+    vel_res = get_result(ses, None, step_res.parent_id)
+    if vel_res is None:
+        print 'No matching results for ID = {}'.format(step_res.parent_id)
+        return
+    rast_res = get_result(ses, None, vel_res.parent_id)
+    if rast_res is None:
+        print 'No matching results for ID = {}'.format(vel_res.parent_id)
+        return
+    # get the field and linspaces
+    field, linspaces = None, None
+    for arr in rast_res.data:
+        if arr.typename == 'gscalar':
+            field = arr.data
+        if arr.typename == 'linspace':
+            linspaces = arr.data
+    assert(field is not None and linspaces is not None)
+
+    field = Scalar(field, linspaces)
+
+    paths = list(step_res.data)
     points = list()
     pot    = list()
     for path in paths:
-        for pt,v in zip(path.data[:,0:3],path.data[:,3:4]):
+        for pt in path.data[:,0:3]:
             points.append(pt)
-            vel.append(v)
+            pot.append(field(pt))
     points = numpy.asarray(points)
-    vel = numpy.asarray(vel)
+    pot = numpy.asarray(pot)
 
     from tvtk.api import tvtk, write_data
     ug = tvtk.UnstructuredGrid()    
@@ -99,8 +121,8 @@ def save_step_vtk(ses, outname):
     
     ug.set_cells(1, cell_array)
     ug.points = points
-    ug.point_data.scalars = vel
-    ug.point_data.scalars.name = 'velocity'
+    ug.point_data.scalars = pot
+    ug.point_data.scalars.name = 'potential'
     
     fname = '%s-%s.vtk' % (outname, 'paths')
     write_data(ug, fname)
