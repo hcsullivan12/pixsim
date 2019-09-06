@@ -1,7 +1,8 @@
 import pygmsh
 import numpy as np
 
-def initPixels(pad_spacing = 0.4, 
+def initPixels(tpc_dim     = (2,5,5),
+               pad_spacing = 0.4, 
                grid_size   = (6,6),
                pad_offset  = 0.0, 
                **kwds):
@@ -25,7 +26,7 @@ def initPixels(pad_spacing = 0.4,
     pixels_y.sort(reverse=True)
     # translate to 0 < z < length
     for i,p in enumerate(pixels_z):
-        pixels_z[i]+=pad_offset
+        pixels_z[i]+=0.5*tpc_dim[2]
 
     pixels = list()
     for y in pixels_y:
@@ -55,12 +56,12 @@ def construct_pixels(active, geom, pixels,
             raise ValueError('Shape not supported: %s' % pad_shape)
     return active
 
-def construct_grid(active, geom, pixels,
+def construct_grid(active, geom, pixels, 
+                   tpc_dim = (2,5,5), 
                    pad_spacing  = 0.4,
                    pad_offset   = 0.0,
                    grid_pitch   = 0.04,
                    grid_dim     = (6,6),
-                   tpc_dim      = (2.0, 10., 10.), 
                    **kwds):
     '''
     Constructing focusing grid
@@ -69,6 +70,7 @@ def construct_grid(active, geom, pixels,
     grid_extent_y = grid_dim[1]*pad_spacing+grid_pitch
     grid_corner_z = 0.5*(tpc_dim[2] - grid_extent_z)
     grid_corner_y = 0.5*(tpc_dim[1] - grid_extent_y)
+    print grid_corner_z, grid_extent_z
     focus_grid = geom.add_box( [pad_offset, -0.5*tpc_dim[1]+grid_corner_y, grid_corner_z], 
                                [grid_pitch, grid_extent_y, grid_extent_z])
     for x,y,z in pixels:
@@ -84,7 +86,7 @@ def construct_geometry(geofile, tpc_dim=(2.0,10.,10.), build_pads=0, **kwds):
     '''
 
     # initialize pixels
-    pixels = initPixels(**kwds)
+    pixels = initPixels(tpc_dim, **kwds)
     print 'Initialized',len(pixels),'pixels...'
 
     # start constructing the geometry
@@ -96,7 +98,7 @@ def construct_geometry(geofile, tpc_dim=(2.0,10.,10.), build_pads=0, **kwds):
         active = construct_pixels(active, geom, pixels, **kwds)
     # grid
     if build_pads:
-        active = construct_grid(active, geom, pixels, **kwds)
+        active = construct_grid(active, geom, pixels, tpc_dim, **kwds)
     
     mesh = pygmsh.generate_mesh(geom, geo_filename=geofile)
 
