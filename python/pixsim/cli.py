@@ -94,7 +94,6 @@ def cmd_boundary(ctx, config, name):
     Solve boundary value problem. Takes the input msh file and solves for 
     dirichlet and nuemann coefficients on the boundaries.
     '''
-
     from pixsim.solve_boundary import solve_boundary
     arrays = solve_boundary(ctx.obj['mesh_filename'], **ctx.obj['cfg'][config])
     res = Result(name=name, typename='boundary', data=arrays)

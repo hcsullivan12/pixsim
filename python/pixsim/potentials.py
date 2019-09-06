@@ -6,11 +6,15 @@ class field_cage(object):
     applies voltage stepper on walls.
     '''
 
-    def __init__(self, domains, drift_length, efield=500., anode_v=0., **kwds):
+    def __init__(self, domains=None, drift_length=None, 
+                 efield=None, anode_v=None, pad_v=None, 
+                 grid_v=None, **kwds):
         self.domains      = domains
         self.drift_length = drift_length
         self.efield       = efield
         self.anode_v      = anode_v
+        self.pad_v        = pad_v
+        self.grid_v       = grid_v
 
     def __call__(self, r, n, domain_index, result):
         try:
@@ -18,11 +22,15 @@ class field_cage(object):
         except:
             print 'Domain index not found:',domain_index
 
-        if name == 'walls':
+        if 'wall' in name:
             result[0] = self.anode_v - self.efield * r[0] 
-        elif name == 'cathode':
+        elif 'cathode' in name:
             result[0] = self.anode_v - self.efield * self.drift_length
-        elif name == 'anode':
+        elif 'anode' in name:
             result[0] = self.anode_v
+        elif 'pixel' in name:
+            result[0] = self.pad_v
+        elif 'grid' in name:
+            result[0] = self.grid_v
         else:
             raise ValueError('Unknown domain:', name)
