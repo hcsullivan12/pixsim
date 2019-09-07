@@ -3,12 +3,10 @@ import numpy as np
 import pixsim.bem as bem
 
 def linear(mshfile, sol,
-           linspaces = ( (0,2,100), (-3,3,100), (2,8,100) ), 
-           **kwds):
+           linspaces = ( (0,2,100), (-3,3,100), (2,8,100) ), **kwds):
     '''
     Evaluate the potential on a linear grid space.
     '''
-
     # setting bem accuracy knobs
     kwds = bem.knobs(**kwds)
 

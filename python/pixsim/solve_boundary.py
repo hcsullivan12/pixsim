@@ -13,7 +13,7 @@ def solve_boundary(mshfile, **kwds):
     '''
 
     # setting bem accuracy knobs
-    #kwds = bem.knobs(**kwds)
+    kwds = bem.knobs(**kwds)
 
     # import the mesh
     grid = bempp.api.import_grid(mshfile)
