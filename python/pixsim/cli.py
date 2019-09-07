@@ -145,7 +145,7 @@ def cmd_raster(ctx, source, config, name):
         if res.typename == 'scalar':
             sol = res.data
     from pixsim.raster import linear
-    arrays = linear(ctx.obj['mesh_filename'], sol, **ctx.obj['cfg'])
+    arrays = linear(ctx.obj['mesh_filename'], sol, **ctx.obj['cfg'][config])
     res = Result(name=name, typename='raster', data=arrays, parent=result)
     save_result(ctx, res)
 
@@ -174,7 +174,7 @@ def cmd_velocity(ctx, source, config, name):
     assert(potential is not None and linspace is not None)
 
     import pixsim.velocity as velocity
-    arrays = velocity.drift(potential, linspace, **ctx.obj['cfg'])
+    arrays = velocity.drift(potential, linspace, **ctx.obj['cfg'][config])
     res = Result(name=name, typename='drift', data=arrays, parent=result)
     save_result(ctx, res)
 
@@ -237,6 +237,8 @@ def cmd_delete(ctx, array_id, result_id):
             click.echo("No matching result for result_id = {}".format(result_id))
             return
         click.echo("remove result %d %s %s" % (result.id,result.name,result.typename))
+        for arr in result.data:
+            ses.delete(arr)
         ses.delete(result)
         ses.flush()
         ses.commit()

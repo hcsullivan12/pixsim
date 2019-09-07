@@ -20,17 +20,17 @@ class field_cage(object):
         try:
             name = self.domains[domain_index]
         except:
-            print 'Domain index not found:',domain_index
+            raise ValueError('Domain index not found:',domain_index)
 
-        if 'wall' in name:
+        if name == 'walls':
             result[0] = self.anode_v - self.efield * r[0] 
-        elif 'cathode' in name:
+        elif name == 'cathode':
             result[0] = self.anode_v - self.efield * self.drift_length
-        elif 'anode' in name:
+        elif name == 'anode':
             result[0] = self.anode_v
-        elif 'pixel' in name:
+        elif name == 'pixels':
             result[0] = self.pad_v
-        elif 'grid' in name:
+        elif name == 'grid':
             result[0] = self.grid_v
         else:
             raise ValueError('Unknown domain:', name)
