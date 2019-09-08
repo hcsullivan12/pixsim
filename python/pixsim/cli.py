@@ -80,8 +80,10 @@ def cmd_gengeo(ctx, config, output):
     and exported using GMSH.
     '''
 
-    from pixsim.geometry import construct_geometry
-    arrays = construct_geometry(output, **ctx.obj['cfg'][config])
+    import pixsim.geometry as geometry
+    tocall = eval("geometry.%s" % ctx.obj['cfg'][config]['method'])
+    geo = tocall(output)
+    arrays = geo.construct_geometry(**ctx.obj['cfg'][config])
     res = Result(name='pixels', typename='geo', data=arrays)
     save_result(ctx, res)
 
