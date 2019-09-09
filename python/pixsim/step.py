@@ -74,24 +74,23 @@ def step_rkck(r, t1, t2, v):
     b6 = [None, 1631.0/55296.0, 175.0/512.0, 575.0/13824.0, 44275.0/110592.0, 253.0/4096.0]
     
     h = t2-t1    
-    #print '\n'
+    #print '\nONE:', r
     k1 = h * v(t1, r)
-    #print k1, r
+    #print 'TWO:', r + b2[1]*k1
     k2 = h * v(t1 + a[2]*h, 
                r + b2[1]*k1)
-    #print k2, r + b2[1]*k1
+    #print 'THREE:', r + b3[1]*k1 + b3[2]*k2
     k3 = h * v(t1 + a[3]*h,
                r + b3[1]*k1 + b3[2]*k2)
-    #print k3, r + b3[1]*k1 + b3[2]*k2
+    #print 'FOUR:', r + b4[1]*k1 + b4[2]*k2 + b4[3]*k3
     k4 = h * v(t1 + a[4]*h,
                r + b4[1]*k1 + b4[2]*k2 + b4[3]*k3)
-    #print k4, r + b4[1]*k1 + b4[2]*k2 + b4[3]*k3
+    #print k5, r + b5[1]*k1 + b5[2]*k2 + b5[3]*k3 + b5[4]*k4
     k5 = h * v(t1 + a[5]*h,
                r + b5[1]*k1 + b5[2]*k2 + b5[3]*k3 + b5[4]*k4)
-    #print k5, r + b5[1]*k1 + b5[2]*k2 + b5[3]*k3 + b5[4]*k4
+    #print k6, r + b6[1]*k1 + b6[2]*k2 + b6[3]*k3 + b6[4]*k4 + b6[5]*k5
     k6 = h * v(t1 + a[6]*h,
                r + b6[1]*k1 + b6[2]*k2 + b6[3]*k3 + b6[4]*k4 + b6[5]*k5)
-    #print k6, r + b6[1]*k1 + b6[2]*k2 + b6[3]*k3 + b6[4]*k4 + b6[5]*k5
 
     rnext  = r +  c[1]*k1 +  c[2]*k2 +  c[3]*k3 +  c[4]*k4 +  c[5]*k5 +  c[6]*k6
     rnexts = r + cs[1]*k1 + cs[2]*k2 + cs[3]*k3 + cs[4]*k4 + cs[5]*k5 + cs[6]*k6
@@ -353,12 +352,11 @@ class Stepper(object):
         vstart = self.velo_fun(time, position)
         vmag = math.sqrt(sum([v**2 for v in vstart]))
         dt = p.lcar / vmag
-        #print '\nNew position',position
         for count in range(p.maxiter):
             try:
                 pnext, error = self.step_fun(position, time, time+dt, self.velo_fun)
             except ValueError:
-                #print 'Value Error'
+                print 'Value Error'
                 break
             #print 'Pos: (',position[0],',',position[1],',',position[2],')', '  time:', time, 'dt:', dt, '   ', pnext,'  ',error
         
@@ -402,6 +400,7 @@ def step(vfield, linspaces,
         return velo(r)
 
     # define stepper
+    print 'Stepping with',step_fun
     stepper = Stepper(velocity, lcar=lcar, step_fun=step_fun, **kwds)
 
     xl, yl, zl = step_range
