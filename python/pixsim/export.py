@@ -100,7 +100,37 @@ def save_step_vtk(ses, outname):
 
     field = Scalar(field, linspaces)
 
-    paths = list(step_res.data)
+    # exporting initial position
+    vtxs = [x for x in step_res.data if 'vtx' in x.name]
+    points = list()
+    pot    = list()
+    for vtx in vtxs:
+        for pt in vtx.data:
+            points.append(pt)
+            pot.append(field(pt))
+    points = numpy.asarray(points)
+    pot = numpy.asarray(pot)
+
+    from tvtk.api import tvtk, write_data
+    if len(vtxs):
+        ug = tvtk.UnstructuredGrid()    
+        point_type = tvtk.Vertex().cell_type
+        npoints = len(points)
+        cell_types = numpy.array([point_type]*npoints)
+        cell_array = tvtk.CellArray()
+        cells = numpy.array([npoints]+range(npoints))
+        cell_array.set_cells(point_type, cells)
+
+        ug.set_cells(1, cell_array)
+        ug.points = points
+        ug.point_data.scalars = pot
+        ug.point_data.scalars.name = 'potential'
+
+        fname = '%s-%s.vtk' % (outname, 'vtxs')
+        write_data(ug, fname)
+
+    # exporting paths
+    paths = [x for x in step_res.data if 'path' in x.name]
     points = list()
     pot    = list()
     for path in paths:
@@ -110,22 +140,22 @@ def save_step_vtk(ses, outname):
     points = numpy.asarray(points)
     pot = numpy.asarray(pot)
 
-    from tvtk.api import tvtk, write_data
-    ug = tvtk.UnstructuredGrid()    
-    point_type = tvtk.Vertex().cell_type
-    npoints = len(points)
-    cell_types = numpy.array([point_type]*npoints)
-    cell_array = tvtk.CellArray()
-    cells = numpy.array([npoints]+range(npoints))
-    cell_array.set_cells(point_type, cells)
-    
-    ug.set_cells(1, cell_array)
-    ug.points = points
-    ug.point_data.scalars = pot
-    ug.point_data.scalars.name = 'potential'
-    
-    fname = '%s-%s.vtk' % (outname, 'paths')
-    write_data(ug, fname)
+    if len(paths):
+        ug = tvtk.UnstructuredGrid()    
+        point_type = tvtk.Vertex().cell_type
+        npoints = len(points)
+        cell_types = numpy.array([point_type]*npoints)
+        cell_array = tvtk.CellArray()
+        cells = numpy.array([npoints]+range(npoints))
+        cell_array.set_cells(point_type, cells)
+        
+        ug.set_cells(1, cell_array)
+        ug.points = points
+        ug.point_data.scalars = pot
+        ug.point_data.scalars.name = 'potential'
+        
+        fname = '%s-%s.vtk' % (outname, 'paths')
+        write_data(ug, fname)
 
 def export(ses, mshfile, save, outname):
     '''

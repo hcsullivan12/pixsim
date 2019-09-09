@@ -50,6 +50,7 @@ def dump_array(ses, arr_id):
         print 'x =',arr[0,:,:,:].reshape(arr[0].size)
         print 'y =',arr[1,:,:,:].reshape(arr[1].size)
         print 'z =',arr[2,:,:,:].reshape(arr[2].size)
+        print sum(arr[0,:,:,:].reshape(arr[0].size))/arr[0].size
     else:
         print arr
 
