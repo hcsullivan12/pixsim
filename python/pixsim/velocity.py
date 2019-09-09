@@ -39,8 +39,8 @@ def drift(potential, linspaces, temperature=89, **kwds):
     Return an N-field matrix calculated assuming result holds a potential.
     '''
     print 'Drifting...'
-    dxyz = [(ls[1]-ls[0])/(ls[2]-1) for ls in linspaces]
-    E = -1 * numpy.asarray(numpy.gradient(potential, *dxyz))
+    dxyz = [(ls[1]-ls[0]) for ls in linspaces]
+    E = numpy.asarray(numpy.gradient(potential, *dxyz))
     # potential is in V and linspaces should be in cm, convert to kV/cm
     E /= 1000.
     Emag = numpy.sqrt(E[0]**2 + E[1]**2 + E[2]**2)

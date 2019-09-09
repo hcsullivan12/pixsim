@@ -32,8 +32,13 @@ def linear(mshfile, sol,
     print 'u_reshaped.shape=',u_reshaped.shape
     print mgrid[0].shape, points.shape, len(points)
 
-    dxyz = [(ls[1]-ls[0])/(ls[2]-1) for ls in linspaces]
+    dxyz = [(ls[1]-ls[0]) for ls in linspaces]
+    #for ls in linspaces:
+    #    print ls,ls[0],ls[1],ls[2]
+    print dxyz
     u_grad = np.asarray(np.gradient(u_reshaped, *dxyz))
+    #from pixsim.vector import Gradient
+    #grad = Gradient(u_reshaped, points)
 
     # convert efield to kV to help later
     u_grad /= 1000.
