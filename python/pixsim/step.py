@@ -140,7 +140,7 @@ class BoundPrecision(object):
         return min(self.maxrat, rel)
 
 class StuckDetection(object):
-    def __init__(self, distance=0.01, nallowed=3):
+    def __init__(self, distance=0.1, nallowed=1):
         '''
         Create a StuckDetection object.
 
@@ -412,6 +412,7 @@ def step(vfield, linspaces,
     
     from pixsim.models import Array
     paths = list()
+    vtxs  = list()
     count = 0
 
     for y in numpy.linspace(yl[0], yl[1], 1+int(yr/ys)):
@@ -420,9 +421,11 @@ def step(vfield, linspaces,
             count += 1
 
             position = (x,y,z)
+            vtxs.append( position )
             visitor = stepper(start_time, position, CollectSteps(StuckDetection(distance=stuck)))
             paths.append( Array(typename='points', name=name, data=visitor.array) )
             print 'Stepped',len(visitor.array),' times from (',x,',',y,',',z,') to (',visitor.array[-1][0],',',visitor.array[-1][1],',',visitor.array[-1][2],')'
-    return paths
+    arr = Array(typename='points', name='vtxs', data=numpy.asarray(vtxs))
+    return [arr]+paths
 
 
