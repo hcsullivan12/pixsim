@@ -11,7 +11,7 @@ class BoxTpc:
 
     def initPixels(tpc_dim     = (2,5,5),
                    pad_spacing = 0.4, 
-                   grid_size   = (6,6),
+                   grid_dim   = (6,6),
                    pad_offset  = 0.0):
         '''
         Initialize the positions of the pixels. 
@@ -20,12 +20,12 @@ class BoxTpc:
         '''
         currentZ = 0.5*pad_spacing
         pixels_z, pixels_y = list(), list()
-        while len(pixels_z) < grid_size[0]:
+        while len(pixels_z) < grid_dim[0]:
             pixels_z.append(currentZ)
             pixels_z.append(-1*currentZ)
             currentZ += pad_spacing
         currentY = 0.5*pad_spacing
-        while len(pixels_y) < grid_size[1]:
+        while len(pixels_y) < grid_dim[1]:
             pixels_y.append(currentY)
             pixels_y.append(-1*currentY)
             currentY += pad_spacing
@@ -115,7 +115,7 @@ class FieldCageTpc:
         self.geofile = geofile
 
     def initPixels(self, pad_spacing = 0.4, 
-                   grid_size   = (6,6),
+                   grid_dim   = (6,6),
                    pad_offset  = 0.0,
                    **kwds):
         '''
@@ -125,12 +125,12 @@ class FieldCageTpc:
         '''
         currentZ = 0.5*pad_spacing
         pixels_z, pixels_y = list(), list()
-        while len(pixels_z) < grid_size[0]:
+        while len(pixels_z) < grid_dim[0]:
             pixels_z.append(currentZ)
             pixels_z.append(-1*currentZ)
             currentZ += pad_spacing
         currentY = 0.5*pad_spacing
-        while len(pixels_y) < grid_size[1]:
+        while len(pixels_y) < grid_dim[1]:
             pixels_y.append(currentY)
             pixels_y.append(-1*currentY)
             currentY += pad_spacing
@@ -153,7 +153,6 @@ class FieldCageTpc:
         '''
         for x,y,z in pixels:
             if pad_shape == 'box':
-                print x, y-pad_rmax,z-pad_rmax
                 pad = geom.add_box( [x, y-pad_rmax, z-pad_rmax], 
                                     [grid_pitch, 2*pad_rmax, 2*pad_rmax] )
             elif pad_shape == 'circle':
@@ -164,8 +163,8 @@ class FieldCageTpc:
                 raise ValueError('Shape not supported: %s' % pad_shape)
         return geom
 
-    def construct_grid(self, geom, pixels, 
-                       tpc_dim = (2,5,5), 
+    def construct_grid(active, geom, pixels, 
+                       tpc_dim = (0,10,20), 
                        pad_spacing  = 0.4,
                        pad_offset   = 0.0,
                        grid_pitch   = 0.04,
@@ -176,14 +175,53 @@ class FieldCageTpc:
         '''
         grid_extent_z = grid_dim[0]*pad_spacing+grid_pitch
         grid_extent_y = grid_dim[1]*pad_spacing+grid_pitch
-        grid_corner_z = 0.5*(tpc_dim[2] - grid_extent_z)
-        grid_corner_y = 0.5*(tpc_dim[1] - grid_extent_y)
-        focus_grid = geom.add_box( [pad_offset, -0.5*tpc_dim[1]+grid_corner_y, grid_corner_z], 
+        grid_corner_z = 0.5*grid_extent_z
+        grid_corner_y = 0.5*grid_extent_y
+        focus_grid = geom.add_box( [pad_offset, -1*grid_corner_y, -1*grid_corner_z], 
                                    [grid_pitch, grid_extent_y, grid_extent_z])
+        boxes = list()
         for x,y,z in pixels:
             grid_off = 0.5*(pad_spacing-grid_pitch)
             box = geom.add_box( [x, y-grid_off, z-grid_off], 
-                                [grid_pitch, pad_spacing-grid_pitch, pad_spacing-grid_pitch])
+                                [grid_pitch, 2*grid_off, 2*grid_off])
+            #boxes.append(box)
+            focus_grid = geom.boolean_difference([focus_grid], [box])
+        return geom
+    
+    def construct_grid_old(self, geom, pixels, 
+                       tpc_dim = (0,10,20), 
+                       pad_spacing  = 0.4,
+                       pad_offset   = 0.0,
+                       grid_pitch   = 0.04,
+                       grid_dim     = (6,6),
+                       **kwds):
+        '''
+        Constructing focusing grid
+        '''
+        wires = []
+        length = grid_dim[0]*pad_spacing
+        sp1 = [pad_offset,-0.5*length, 0]
+        sp2 = [pad_offset,0,-0.5*length]
+        center1 = geom.add_cylinder(sp1, [0,length,0], 0.5*grid_pitch)
+        center2 = geom.add_cylinder(sp2, [0,0,length], 0.5*grid_pitch)
+        grid   = geom.boolean_union([center1,center2])
+        wires.append(grid)
+        for ywire in range(1, int(0.5*grid_dim[0])+1):
+            sp = [pad_offset,ywire*pad_spacing,-0.5*length]
+            wire = geom.add_cylinder(sp, [0,0,length], 0.5*grid_pitch)
+            wires.append(wire)
+            sp = [pad_offset,-1*ywire*pad_spacing,-0.5*length]
+            wire = geom.add_cylinder(sp, [0,0,length], 0.5*grid_pitch)
+            wires.append(wire)
+        for zwire in range(1, int(0.5*grid_dim[1])+1):
+            sp = [pad_offset,-0.5*length, zwire*pad_spacing]
+            wire = geom.add_cylinder(sp, [0,length,0], 0.5*grid_pitch)
+            wires.append(wire)
+            sp = [pad_offset,-0.5*length, -1*zwire*pad_spacing]
+            wire = geom.add_cylinder(sp, [0,length,0], 0.5*grid_pitch)
+            wires.append(wire)
+        
+        grid = geom.boolean_union(wires)
         return geom
 
     def construct_geometry(self, tpc_dim=(0.,10.,20.), electrode_thickness=0.5, 
@@ -197,17 +235,25 @@ class FieldCageTpc:
         # start constructing the geometry
         geom = pygmsh.opencascade.Geometry()
         # cathode and anode
-        anode   = geom.add_cylinder([-0.5*electrode_thickness,0,0], [electrode_thickness,0,0], tpc_dim[1])
-        cathode = geom.add_cylinder([tpc_dim[2]-0.5*electrode_thickness,0,0], [electrode_thickness,0,0], tpc_dim[1])
-        # field shaping rings
-        increment = tpc_dim[2]/(nrings+1)
-        xpos = increment-ring_thickness*0.5
-        for r in range(0, nrings):
-            print 0,tpc_dim[2],xpos
-            rin = geom.add_cylinder([xpos,0,0], [ring_thickness,0,0], tpc_dim[1]-ring_thickness)
-            rout = geom.add_cylinder([xpos,0,0], [ring_thickness,0,0], tpc_dim[1])
-            ring = geom.boolean_difference([rout], [rin])
-            xpos += increment
+        asp = [-0.5*electrode_thickness,0,0]
+        csp = [tpc_dim[2]+asp[0],0,0]
+        anode   = geom.add_cylinder(asp, [electrode_thickness,0,0], tpc_dim[1])
+        cathode = geom.add_cylinder(csp, [electrode_thickness,0,0], tpc_dim[1])
+        ## field shaping rings
+        # using solid wall
+        wsp = [-1*asp[0]+0.1,0,0]
+        wl  = csp[0]-0.1
+        rin  = geom.add_cylinder(wsp, [wl,0,0], tpc_dim[1]-ring_thickness)
+        rout = geom.add_cylinder(wsp, [wl,0,0], tpc_dim[1])
+        ring = geom.boolean_difference([rout], [rin])
+        #    
+        #increment = tpc_dim[2]/(nrings+1)
+        #xpos = increment-ring_thickness*0.5
+        #for r in range(0, nrings):
+        #    rin = geom.add_cylinder([xpos,0,0], [ring_thickness,0,0], tpc_dim[1]-ring_thickness)
+        #    rout = geom.add_cylinder([xpos,0,0], [ring_thickness,0,0], tpc_dim[1])
+        #    ring = geom.boolean_difference([rout], [rin])
+        #    xpos += increment
 
         # pixels
         if build_pads:
