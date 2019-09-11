@@ -1,5 +1,5 @@
 import bempp.api
-import pixsim.operators as operators
+import pixsim.bem as bem
 import numpy as np
 
 def plot_efield(mshfile, sol,

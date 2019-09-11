@@ -117,7 +117,7 @@ def cmd_plot_boundary(ctx, typename, config, qyantity):
         return
     sol_coeff = None
     for res in results.data:
-        if res.name == 'neumann_coeff':
+        if res.name == 'neumann':
             sol_coeff = res.data
     assert(sol_coeff is not None)
     import pixsim.plotting as plt
@@ -212,6 +212,40 @@ def cmd_step(ctx, source, config, name):
     arrays = step.step(vfield, linspace, **ctx.obj['cfg'][config])
     res = Result(name=name, typename='step', data=arrays, parent=drift_result)
     save_result(ctx, res)
+
+@cli.command("stepfilter")
+@click.option("-s","--source", default='step', type=str, help="Typename of results to source.")
+@click.option("-c","--config", default='stepfilter', type=str, help="Section name in config.")
+@click.option('-n','--name', default='filteredpaths', type=str, help='Name of result.')
+@click.pass_context
+def cmd_step(ctx, source, config, name):
+    '''
+    Filter steps.
+    '''
+    ses = ctx.obj['session']
+    step_result = get_result(ses, source, None)
+    if step_result is None:
+        click.echo("No matching results for typename = {}".format(source))
+        return
+    geo_result  = get_result(ses, None, step_result.parent_id)
+    if geo_result is None:
+        click.echo("No matching results for parent ID = {}".format(step_result.parent_id))
+        return
+    
+    vfield, linspace = None, None
+    for res in step_result.data:
+        if res.typename == 'gvector':
+            vfield = res.data
+    for res in geo_result.data:
+        if res.typename == 'linspace':
+            linspace = res.data
+    assert(vfield is not None and linspace is not None and 'Results were not found')
+    
+    import pixsim.step as step
+    arrays = step.step(vfield, linspace, **ctx.obj['cfg'][config])
+    res = Result(name=name, typename='step', data=arrays, parent=step_result)
+    save_result(ctx, res)
+
 
 @cli.command("delete")
 @click.option("-a","--array_id", type=int, default=None, help="Array id to delete")
