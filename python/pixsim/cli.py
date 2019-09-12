@@ -34,6 +34,17 @@ def save_result(ctx, results):
         click.echo('id:%d typename:%s name:%s narrays:%d' % (result.id, result.typename, result.name, len(result.data)))
     return
 
+def find_data(res, names):
+    '''
+    Retrieve data from result.
+    '''
+    ret = [None for n in names]
+    for i,n in enumerate(names):
+        for arr in res.data:
+            if res.typename == n:
+                ret[i] = arr.data
+    return *ret
+
 @click.group()
 @click.option('-c', '--config',  default=None, help = 'Path to configuration file.')
 @click.option('-s', '--store',   default=None, help = 'Set data store file.')
@@ -96,35 +107,37 @@ def cmd_boundary(ctx, config, name):
     Solve boundary value problem. Takes the input msh file and solves for 
     dirichlet and nuemann coefficients on the boundaries.
     '''
-    from pixsim.solve_boundary import solve_boundary
-    arrays = solve_boundary(ctx.obj['mesh_filename'], **ctx.obj['cfg'][config])
+    from pixsim.boundary import boundary
+    arrays = boundary(ctx.obj['mesh_filename'], **ctx.obj['cfg'][config])
     res = Result(name=name, typename='boundary', data=arrays)
     save_result(ctx, res)
 
-@cli.command("plot_boundary")
-@click.option("-t","--typename", default='boundary', type=str, help="Type name of results to use.")
-@click.option('-c','--config', default='boundary_plotting', help='Section name in config.')
-@click.option('-q','--qyantity', default='potential', type=str, help='Quantity to plot (potential/efield).')
+@cli.command("plot")
+@click.option("-i","--id", default=None, type=int, help="ID of results to use.")
+@click.option('-c','--config', default='plotting', help='Section name in config.')
+@click.option('-q','--quantity', default='potential', type=str, help='Quantity to plot (potential/efield).')
 @click.pass_context
-def cmd_plot_boundary(ctx, typename, config, qyantity):
+def cmd_plot(ctx, id, config, quantity):
     '''
-    Plotting boundary results.
+    Plotting results.
     '''
     ses = ctx.obj['session']
-    results = get_result(ses, typename, None)
-    if results is None:
-        click.echo("No matching results for typename = {}".format(typename))
+    bres = get_result(ses, None, id)
+    if bres is None:
+        click.echo("No matching results for id = {}".format(id))
         return
-    sol_coeff = None
-    for res in results.data:
-        if res.name == 'neumann':
-            sol_coeff = res.data
-    assert(sol_coeff is not None)
+
+    points, bins, pot, grad = find_data(res, ['points', 'bins', 'gscalar', 'gvector'])
+
     import pixsim.plotting as plt
-    if qyantity == 'potential':
-        plt.plot_potential(ctx.obj['mesh_filename'], sol_coeff, **ctx.obj['cfg'][config])
+    if quantity == 'potential':
+        plt.plot_potential(ctx.obj['mesh_filename'], bins, points, pot, **ctx.obj['cfg'][config])
+        return
+    elif quantity == 'gradient':
+        plt.plot_efield(ctx.obj['mesh_filename'], grad, **ctx.obj['cfg'][config])
+        return
     else:
-        plt.plot_efield(ctx.obj['mesh_filename'], sol_coeff, **ctx.obj['cfg'][config])
+        click.echo("Cannot plot quantity {}".format(quantity))
 
 @cli.command("raster")
 @click.option("-s","--source", default='boundary', type=str, help="Typename of results to source.")
@@ -136,19 +149,16 @@ def cmd_raster(ctx, source, config, name):
     Evaluate solution on a raster of points.
     '''
     ses = ctx.obj['session']
-    result = get_result(ses, typename=source, id=None)
-    if result is None:
+    bres = get_result(ses, typename=source, id=None)
+    if bres is None:
         click.echo("No matching results for typename = {}".format(source))
         return
 
-    # get the solution
-    sol = None
-    for res in result.data:
-        if res.typename == 'scalar':
-            sol = res.data
+    sol = find_data(bres, ['potential'])
+
     from pixsim.raster import linear
     arrays = linear(ctx.obj['mesh_filename'], sol, **ctx.obj['cfg'][config])
-    res = Result(name=name, typename='raster', data=arrays, parent=result)
+    res = Result(name=name, typename='raster', data=arrays, parent=bres)
     save_result(ctx, res)
 
 @cli.command("velocity")
@@ -162,22 +172,17 @@ def cmd_velocity(ctx, source, config, name):
     '''
 
     ses = ctx.obj['session']
-    result = get_result(ses, source, None)
-    if result is None:
+    rasres = get_result(ses, source, None)
+    if rasres is None:
         click.echo("No matching results for typename = {}".format(source))
         return
 
-    potential, linspace = None, None
-    for res in result.data:
-        if res.typename == 'linspace':
-            linspace = res.data
-        if res.typename == 'gscalar':
-            potential = res.data
+    potential, linspace = find_data(rasres, ['gscalar', 'linspace'])
     assert(potential is not None and linspace is not None)
 
     import pixsim.velocity as velocity
     arrays = velocity.drift(potential, linspace, **ctx.obj['cfg'][config])
-    res = Result(name=name, typename='drift', data=arrays, parent=result)
+    res = Result(name=name, typename='drift', data=arrays, parent=rasres)
     save_result(ctx, res)
 
 @cli.command("step")
@@ -199,7 +204,7 @@ def cmd_step(ctx, source, config, name):
         click.echo("No matching results for parent ID = {}".format(drift_result.parent_id))
         return
     
-    vfield, linspace = None, None
+    vfield, efield, linspace = None, None, None
     for res in drift_result.data:
         if res.typename == 'gvector':
             vfield = res.data
@@ -208,10 +213,56 @@ def cmd_step(ctx, source, config, name):
             linspace = res.data
     assert(vfield is not None and linspace is not None and 'Results were not found')
     
+    temp = get_array(ses, None, 57).data
+
     import pixsim.step as step
-    arrays = step.step(vfield, linspace, **ctx.obj['cfg'][config])
+    arrays = step.step(vfield, linspace, temp, **ctx.obj['cfg'][config])
     res = Result(name=name, typename='step', data=arrays, parent=drift_result)
     save_result(ctx, res)
+
+@cli.command("current")
+@click.option("-b","--boundary", default='boundary', type=str, help="Typename of boundary results.")
+@click.option("-s","--step", default='steps', type=str, help="Typename of step results.")
+@click.option("-c","--config", default='step', type=str, help="Section name in config.")
+@click.option('-n','--name', default='paths', type=str, help='Name of result.')
+@click.pass_context
+def cmd_step(ctx, boundary, step, config, name):
+    '''
+    Calculate the current on pixels.
+    '''
+    ses = ctx.obj['session']
+    arr = get_array(ses, None, 70).data
+    waveform = list()
+    times = list()
+    import numpy as np
+    print arr.shape
+    for x in arr:
+        print x 
+        if x[0] < 0.27:
+            continue
+        print x[4]
+        value = np.dot(x[4:7],x[7:])
+        waveform.append(-1*value)
+        times.append(x[6])
+    arr = [ Array(typename='gscalar', name='scalar', data = np.asarray(waveform))]
+    res = Result(name='heythere', typename='step', data=arr)
+    save_result(ctx, res)
+
+    times = np.asarray(times)
+
+    import matplotlib.pyplot as plt
+    plt.plot(times, arr[0].data)
+    plt.xlabel("t [us]",fontsize=20)
+    plt.ylabel("current [arb]",fontsize=20)
+    plt.xticks(fontsize=20)
+    plt.yticks(fontsize=20)
+    plt.show()
+
+    
+
+
+
+
 
 @cli.command("stepfilter")
 @click.option("-s","--source", default='step', type=str, help="Typename of results to source.")

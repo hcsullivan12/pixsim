@@ -31,20 +31,18 @@ def linear(mshfile, sol,
     u_reshaped = u_evaluated.reshape(mgrid[0].shape)
     print 'u_reshaped.shape=',u_reshaped.shape
     print mgrid[0].shape, points.shape, len(points)
-
-    dxyz = [(ls[1]-ls[0]) for ls in linspaces]
-    #for ls in linspaces:
-    #    print ls,ls[0],ls[1],ls[2]
-    print dxyz
-    u_grad = np.asarray(np.gradient(u_reshaped, *dxyz))
-    #from pixsim.vector import Gradient
-    #grad = Gradient(u_reshaped, points)
-
-    # convert efield to kV to help later
-    u_grad /= 1000.
+    
+    try:
+       dxyz = [(ls[1]-ls[0]) for ls in linspaces]
+       u_grad = np.asarray(np.gradient(u_reshaped, *dxyz))
+       # convert efield to kV to help later
+       u_grad /= 1000.
+    except:
+       print 'Warning: Could not compute gradient'
+       u_grad = np.empty([1,1])
 
     from pixsim.models import Array
-    return [ Array(typename='linspace', name='bins',     data = linspaces),
-             Array(typename='gscalar',  name='scalar',   data = u_reshaped),
-             Array(typename='gvector',  name='gradient', data = u_grad),
-             Array(typename='points',   name='points',   data = points) ]
+    return [ Array(typename='linspace', name='bins',      data = linspaces),
+             Array(typename='gscalar',  name='potential', data = u_reshaped),
+             Array(typename='gvector',  name='gradient',  data = u_grad),
+             Array(typename='points',   name='points',    data = points) ]

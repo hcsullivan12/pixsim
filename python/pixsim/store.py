@@ -59,9 +59,9 @@ def dump_table(ses):
     print 'Results...'
     for res in results(ses):
         print 'id: %-2s  name: %-10s  typename: %-10s  data: %-2s  parent: %-2s' % (res.id, res.name, res.typename, len(res.data), res.parent_id)
-    #print 'Arrays...'
-    #for arr in arrays(ses):
-    #    print 'id: %-2s  name: %-10s  typename: %-10s  shape: %-10s' % (arr.id, arr.name, arr.typename, arr.data.shape)
+    print 'Arrays...'
+    for arr in arrays(ses):
+        print 'id: %-2s  name: %-10s  typename: %-10s  shape: %-10s' % (arr.id, arr.name, arr.typename, arr.data.shape)
 
 def dump(ses, arr_id):
     """Dump contents."""

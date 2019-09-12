@@ -1,6 +1,5 @@
 import bempp.api
 import pixsim.bem as bem
-import numpy as np
 
 def plot_efield(mshfile, sol,
                 efield_linspaces = ( (0,2,80), (-3,3,60), (2,8,60) ),
@@ -66,49 +65,40 @@ def plot_efield(mshfile, sol,
     plt.show()
     
 
-def plot_potential(mshfile, sol,
-                  potent_linspaces = ( (0,2,80), (-3,3,60), (2,8,60) ),
-                  plane     = 'xz',
-                  height    = 0.0,  
-                  **kwds):
+def plot_potential(mshfile, bins, points, pot, height=0.2, draw_contours=1, **kwds):
     '''
-    Area to plot solution on some domain.
+    Area to plot solution.
     '''
-    linspaces = potent_linspaces
-    # import the mesh
-    grid = bempp.api.import_grid(mshfile)
-    # get the solution
-    sol = bempp.api.GridFunction(grid, coefficients = sol)
-    linsp = [np.linspace(*ls) for ls in linspaces]
-    mgrid = np.meshgrid(*linsp, indexing='ij')
-    points = None
-    extent = None
-    
-    import matplotlib
-    if plane == 'xy' or plane == 'yx':
-        points = np.vstack( (mgrid[0].ravel(),mgrid[1].ravel(),height*np.ones(mgrid[2].size)) )
-        extent = (linspaces[1][0], linspaces[1][1], linspaces[0][0], linspaces[0][1], )
-    
-    if plane == 'xz' or plane == 'zx':
-        points = np.vstack( (mgrid[0].ravel(),height*np.ones(mgrid[1].size), mgrid[2].ravel()) )
-        extent = (linspaces[2][0], linspaces[2][1], linspaces[0][0], linspaces[0][1])
-
-    if plane == 'yz' or plane == 'zy':
-        points = np.vstack( (height*np.ones(mgrid[0].size), mgrid[1].ravel(),mgrid[2].ravel()) )
-        extent = (linspaces[2][0], linspaces[2][1], linspaces[1][0], linspaces[1][1])
-
-    # evaluate on our space
-    piecewise_lin_space, piecewise_const_space = bem.get_spaces(grid)
-    slp_pot = bempp.api.operators.potential.laplace.single_layer(piecewise_const_space, points)
-    u_evaluated = slp_pot * sol
-
-    matplotlib.rcParams['figure.figsize'] = (15.0, 10.0)
-    matplotlib.rcParams["image.origin"] = 'lower'
-
+    import numpy as np
+    from scipy.interpolate import griddata
     import matplotlib.pyplot as plt
 
-    plt.imshow(u_evaluated.T, extent=extent)
-    cb = plt.colorbar()
-    cb.ax.invert_yaxis()
+    extents = [ [np.min(points[i]), np.max(points[i])] for i in range(0,3) ]
+    npoints = [ len(bins[i]) for i in range(0,3) ]
+    grid_x, grid_y, grid_z = np.mgrid[extents[0][0]:extents[0][1]:500j, 
+                                      extents[1][0]:extents[1][1]:1j, 
+                                      extents[2][0]:extents[2][1]:500j]
+
+    # plotting in xz plane
+    points = points.T
+    pot = pot.reshape(points.shape[0],1)
+    interp = griddata(points, pot, (grid_x, height, grid_z), method='linear')
+    plt.subplot(121)
+    data = interp[:,0,:,0]
+    plt.figure(figsize = (20,20))
+    plt.imshow(data,cmap='jet', extent=(extents[2][0],extents[2][1],extents[0][0],extents[0][1]),origin='lower')
+    plt.xlabel("z [cm]",fontsize=20)
+    plt.ylabel("x [cm]",fontsize=20)
+    plt.xticks(fontsize=20)
+    plt.yticks(fontsize=20)
+    if draw_contours:
+        contours = plt.contour(grid_z[:,0,:], grid_x[:,0,:], data, [0.005,0.010,0.017,0.025,0.050,0.075,0.1,0.2,0.3], colors='black')
+        plt.clabel(contours, inline=True, fontsize=8)
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+    ax = plt.gca()
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    cb = plt.colorbar(cax=cax)
+    cb.set_label('potential [V]', fontsize=20)
     plt.show()
     
