@@ -46,7 +46,7 @@ class JSONBLOB(types.TypeDecorator):
     def copy(self, **kw):
         return JSONBLOB(self.impl.length)    
 
-
+#todo: Simplify these 
 result_types = [
     'geo',
     'boundary',

@@ -1,5 +1,16 @@
 
 
+class weighting(object):
+    def __init__(self, domain=0, potential=1.0, **kwds):
+        self.domain = domain
+        self.potential = potential
+        print 'weighting for domain=%d potential=%f' % (domain, potential)
+
+    def __call__(self, r, n, index, result):
+        result[0] = 0.0
+        if index == self.domain:
+            result[0] = self.potential
+
 class field_cage(object):
     '''
     Field cage potential. Pass domains and pot,
@@ -28,7 +39,7 @@ class field_cage(object):
             result[0] = self.anode_v - self.efield * self.drift_length
         elif name == 'anode':
             result[0] = self.anode_v
-        elif name == 'pixels':
+        elif 'pixel' in name:
             result[0] = self.pad_v
         elif name == 'grid':
             result[0] = self.grid_v

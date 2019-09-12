@@ -5,15 +5,13 @@ import meshio
 import pixsim.potentials as potentials
 import pixsim.bem as bem
 
-def solve_boundary(mshfile, **kwds):
+def boundary(mshfile, method=None, **kwds):
     '''
     Solve for the nuemann coefficients using bempp.
-    This assumes the surfaces have been defined using GMSH
-    and are labled by 'anode', 'cathode', 'walls', etc.
     '''
 
     # setting bem accuracy knobs
-    kwds = bem.knobs(**kwds)
+    #kwds = bem.knobs(**kwds)
 
     # import the mesh
     grid = bempp.api.import_grid(mshfile)
@@ -24,11 +22,15 @@ def solve_boundary(mshfile, **kwds):
     domains = dict()
     for n,v in mesh.field_data.iteritems():
       domains[v[0]] = n
-    height        = abs( mesh.points[:,1].max()-mesh.points[:,1].min() ) # cm
-    width         = abs( mesh.points[:,2].max()-mesh.points[:,2].min() ) # cm
-    drift_length  = abs( mesh.points[:,0].max()-mesh.points[:,0].min() ) # cm
     
-    drift_pot = potentials.field_cage(domains, drift_length, **kwds)
+    # use the specified potential
+    drift_pot = None
+    if method == 'field_cage':
+      drift_pot = potentials.field_cage(domains, **kwds)
+    elif method == 'weighting':
+      drift_pot = potentials.weighting(**kwds)
+    else:
+      raise ValueError('No boundary method named', method)
 
     # define operators
     piecewise_lin_space, piecewise_const_space = bem.get_spaces(grid)

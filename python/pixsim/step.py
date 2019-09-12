@@ -169,7 +169,7 @@ class CollectSteps(object):
     A Stepper visitor that collects all steps and provides a bounds on the precision.
     '''
 
-    Step = namedtuple('Step','t1 r1 v1 t2 r2 error')
+    Step = namedtuple('Step','t1 r1 v1 t2 r2 error weight')
 
     def __init__(self, stuck=StuckDetection(), bounds = BoundPrecision()):
         '''
@@ -183,7 +183,7 @@ class CollectSteps(object):
         self.bounds = bounds
         self.stuck = stuck
 
-    def __call__(self, t1, r1, v1, t2, r2, error):
+    def __call__(self, t1, r1, v1, t2, r2, error, weight):
         '''
         Collect one step.
 
@@ -211,7 +211,7 @@ class CollectSteps(object):
         @raise StopIteration: if step indicates the stepping is stuck as per the stuck callable
 
         '''
-        self.steps.append(self.Step(t1,r1,v1,t2,r2,error))
+        self.steps.append(self.Step(t1,r1,v1,t2,r2,error,weight))
         if self.stuck(t1,r1,t2,r2):
             raise StopIteration
         return (t2-t1)*self.bounds(error)
@@ -258,6 +258,19 @@ class CollectSteps(object):
         return v
 
     @property
+    def weights(self):
+        '''
+        The N+1 weights.
+
+        @type: list of float
+        '''
+        if not self.steps:
+            return None
+        w = [s.weight for s in self.steps]
+        w.append(self.steps[-1].weight)
+        return w
+
+    @property
     def distance(self):
         '''
         N distances between step k and k+1.
@@ -281,7 +294,8 @@ class CollectSteps(object):
         p = numpy.asarray(self.points)
         t = numpy.asarray(self.times)
         v = numpy.asarray(self.speeds)
-        return numpy.vstack((p.T,v.T,t.T)).T
+        w = numpy.asarray(self.weights)
+        return numpy.vstack((p.T,v.T,t.T,w.T)).T
         
     def __str__(self):
         if not self.steps:
@@ -322,11 +336,12 @@ def StepperParams(params, **defaults):
     return SP(**p)
 
 class Stepper(object):
-    def __init__(self, velo_fun, step_fun = step_rkck, fixed_step=None, **kwds):
+    def __init__(self, velo_fun, weight_func, step_fun = step_rkck, fixed_step=None, **kwds):
         '''
         Create a stepper.
         '''
         self.velo_fun = velo_fun
+        self.weight_fun = weight_func
         self.step_fun = step_fun
         self.fixed_step = fixed_step
         self._defaults = kwds
@@ -362,7 +377,9 @@ class Stepper(object):
         
             try:
                 vel = self.velo_fun(time, position)
-                dtnext = visitor(time, position, numpy.sqrt(vel.dot(vel)), time+dt, pnext, error)
+                weight = self.weight_fun(time, position)
+                print weight
+                dtnext = visitor(time, position, vel, time+dt, pnext, error, weight)
             except StopIteration:
                 print 'StopIteration'
                 break
@@ -380,7 +397,7 @@ class Stepper(object):
             #print '\tit =',count, 'position',position
         return visitor
 
-def step(vfield, linspaces,
+def step(vfield, linspaces, wfield=None,
          step_range = ( (1.5,1.5), (-1,1), (4,6) ),
          step_inc   = (0.1, 0.1, 0.1),
          start_time = 0.0,
@@ -399,9 +416,13 @@ def step(vfield, linspaces,
     def velocity(notused, r):
         return velo(r)
 
+    elec = Field(wfield, linspaces)
+    def weight(notused, r):
+        return elec(r)
+
     # define stepper
     print 'Stepping with',step_fun
-    stepper = Stepper(velocity, lcar=lcar, step_fun=step_fun, **kwds)
+    stepper = Stepper(velocity, weight, lcar=lcar, step_fun=step_fun, **kwds)
 
     xl, yl, zl = step_range
     xr, yr, zr = xl[1]-xl[0], yl[1]-yl[0], zl[1]-zl[0]
