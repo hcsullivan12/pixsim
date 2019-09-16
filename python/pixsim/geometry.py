@@ -1,14 +1,15 @@
 import pygmsh
 import numpy as np
 
-def define_pixels(pad_spacing = 0.4, 
-                  grid_dim   = (6,6),
-                  pad_offset  = 0.0,
-                  **kwds):
+def make_pixels(pad_spacing   = 0.4, 
+                grid_dim      = (6,6),
+                pad_offset    = 0.0,
+                pad_rmax      = 0.04,
+                grid_diameter = 0.04,
+                pad_shape     = 'box',
+                **kwds):
     '''
-    Initialize the positions of the pixels. 
-    This builds an array of pixels that is symmetric 
-    about the y and z axes.
+    Initialize pixels. 
     '''
     currentZ = 0.5*pad_spacing
     pixels_z, pixels_y = list(), list()
@@ -27,8 +28,22 @@ def define_pixels(pad_spacing = 0.4,
     pixels = list()
     for y in pixels_y:
         for z in pixels_z:
-            pixels.append(np.asarray((pad_offset,y,z)))
-    return pixels
+            pixels.append(np.asarray((pad_offset,y,z)))  
+
+    import pixsim.geo as geoobj
+    geo = list()
+    for cent in pixels:
+        pad = None
+        if pad_shape == 'box':
+            pad = geoobj.Box('pixel',0.5*grid_diameter,pad_rmax,pad_rmax,cent)
+        elif pad_shape == 'cylinder':
+            pad = geoobj.Cylinder('pixel',pad_rmax,0.5*grid_diameter,cent,np.asarray([1,0,0]))
+        elif pad_shape == 'sphere':
+            pad = geoobj.Sphere('pixel',pad_rmax,cent)
+        else:
+            raise ValueError('Shape not supported: %s' % pad_shape)
+        geo.append(pad)
+    return geo
 
 def wire_grid(geom, pixels, 
               pad_spacing  = 0.4,
@@ -112,21 +127,23 @@ def construct_pixels_old(active, geom, pixels,
 def construct_pixels(geom, pixels,
                      pad_rmax   = 0.04,
                      grid_diameter = 0.04,
-                     pad_shape  = 'box',
                      **kwds):
     '''
     Placing pixels
     '''
-    for x,y,z in pixels:
-        if pad_shape == 'box':
+    for pix in pixels:
+        _,hdim,center,shape = pix.info()
+        x,y,z = center
+        if shape == 'box':
             pad = geom.add_box( [x-0.5*grid_diameter, y-pad_rmax, z-pad_rmax], 
                                 [grid_diameter, 2*pad_rmax, 2*pad_rmax] )
-        elif pad_shape == 'circle':
+        elif shape == 'circle':
             pad = geom.add_cylinder( [x-0.5*grid_diameter, y, z], 
                                      [grid_diameter,0,0],
                                      pad_rmax )
-        else:
-            raise ValueError('Shape not supported: %s' % pad_shape)
+        elif shape == 'sphere':
+            pad = geom.add_ball( center, 
+                                 hdim)
     return geom
 
 class BoxTpc:
@@ -134,29 +151,22 @@ class BoxTpc:
         self.geofile = geofile
         self.kwds = kwds
 
-    def construct_geometry(self, tpc_dim=(2,2,2), build_pads=0, **kwds):
+    def construct_geometry(self, pixels, tpc_dim=(2,2,2), build_pads=0, build_grid=0, **kwds):
         '''
         Builds geometry and writes .geo file for GMSH
         '''
-        # initialize pixels
-        pixels = define_pixels(**kwds)
-        print 'Initialized',len(pixels),'pixels...'
 
         # start constructing the geometry
         geom = pygmsh.opencascade.Geometry()
         # active
         active = geom.add_box( [0, -0.5*tpc_dim[1], -0.5*tpc_dim[2]], tpc_dim )
-        # pixels
+        # pixels and grid
         if build_pads:
             geom = construct_pixels(geom, pixels, **kwds)
-        # grid
-        if build_pads:
+        if build_grid:
             geom = wire_grid(geom, pixels, **kwds)
 
         mesh = pygmsh.generate_mesh(geom, geo_filename=self.geofile)
-
-        from pixsim.models import Result, Array
-        return [ Array(typename='points', name='pixels', data=np.asarray(pixels)) ]
 
 class FieldCageTpc:
     def __init__(self, geofile):
@@ -209,13 +219,10 @@ class SimpleTpc:
     def __init__(self, geofile):
         self.geofile = geofile
 
-    def construct_geometry(self, tpc_dim=(2.,4,4.), build_pads=1, electrode_diam=10, **kwds):
+    def construct_geometry(self, pixels, tpc_dim=(2.,4,4.), build_pads=1, **kwds):
         '''
         Builds geometry and writes .geo file for GMSH
         '''
-        # initialize pixels
-        pixels = define_pixels(**kwds)
-        print 'Initialized',len(pixels),'pixels...'
         # start constructing the geometry
         geom = pygmsh.opencascade.Geometry()
         # cathode and anode

@@ -46,28 +46,21 @@ class JSONBLOB(types.TypeDecorator):
     def copy(self, **kw):
         return JSONBLOB(self.impl.length)    
 
-#todo: Simplify these 
 result_types = [
-    'geo',
+    'geometry',
     'boundary',
     'raster',
-    'drift',
-    'volume',
-    'evaluate',
-    'points',
-    'step'
+    'velocity',
+    'step',
+    'current'
 ]
 
 array_types = [
     'tuples',       # N_tuples X N_tuple_length.  List of tuples
     'points',       # N_points X 3.  List of (x,y,z) points
-    'rays',         # N_rays X 6.  List of (x1,y1,z1, x2,y2,z2) endpoints
-    'indices',      # N_groups X N_groupsize.  Indices into some other array, in fixed sized groups
     'scalar',       # N_scalars.  One scalar value per something (eg, per point)
+    'vector',       # N_vectors. List of (u,v,w) values for each point.
     'linspace',
-    'mgrid',
-    'gscalar',
-    'gvector'
 ]
 
 subs = Table('subs',

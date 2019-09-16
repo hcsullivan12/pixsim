@@ -1,0 +1,72 @@
+Physical Surface("pixel1") = {7};
+//+
+Physical Surface("pixel2") = {8};
+//+
+Physical Surface("pixel3") = {9};
+//+
+Physical Surface("pixel4") = {10};
+//+
+Physical Surface("pixel5") = {11};
+//+
+Physical Surface("pixel6") = {12};
+//+
+Physical Surface("pixel7") = {13};
+//+
+Physical Surface("pixel8") = {14};
+//+
+Physical Surface("pixel9") = {15};
+//+
+Physical Surface("pixel10") = {16};
+//+
+Physical Surface("pixel11") = {17};
+//+
+Physical Surface("pixel12") = {18};
+//+
+Physical Surface("pixel13") = {19};
+//+
+Physical Surface("pixel14") = {20};
+//+
+Physical Surface("pixel15") = {21};
+//+
+Physical Surface("pixel16") = {22};
+//+
+Physical Surface("pixel17") = {23};
+//+
+Physical Surface("pixel18") = {24};
+//+
+Physical Surface("pixel19") = {25};
+//+
+Physical Surface("pixel20") = {26};
+//+
+Physical Surface("pixel21") = {27};
+//+
+Physical Surface("pixel22") = {28};
+//+
+Physical Surface("pixel23") = {29};
+//+
+Physical Surface("pixel24") = {30};
+//+
+Physical Surface("pixel25") = {31};
+//+
+Physical Surface("pixel26") = {32};
+//+
+Physical Surface("pixel27") = {33};
+//+
+Physical Surface("pixel28") = {34};
+//+
+Physical Surface("pixel29") = {35};
+//+
+Physical Surface("pixel30") = {36};
+//+
+Physical Surface("pixel31") = {37};
+//+
+Physical Surface("pixel32") = {38};
+//+
+Physical Surface("pixel33") = {39};
+//+
+Physical Surface("pixel34") = {40};
+//+
+Physical Surface("pixel35") = {41};
+//+
+Physical Surface("pixel36") = {42};
+//+

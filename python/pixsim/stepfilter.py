@@ -2,11 +2,6 @@ from larf.units import um, mm
 import math
 import numpy
 
-def final_step(point1, point2, hitradius, pitch, offset, direction):
-    '''
-    '''
-
-
 def closest(point, pitch, offset):
     '''
     For infinite parallel lines separated by pitch vector starting at
