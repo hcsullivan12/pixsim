@@ -7,7 +7,7 @@ class Box():
         self.center = center
 
     def inside(self, r):
-        dist = abs(r - center)
+        dist = abs(r - self.center)
         ins = True
         for d,hdim in zip(dist,self.hdim):
             if d > hdim:
@@ -50,7 +50,7 @@ class Sphere():
         self.center = center
 
     def inside(self, r):
-        dist = r - shadow
+        dist = r - self.center
         dist = np.sqrt(sum([x**2 for x in dist]))
         return dist < self.radius
 

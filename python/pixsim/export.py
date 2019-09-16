@@ -92,7 +92,7 @@ def save_step_vtk(ses, outname):
     # get the field and linspaces
     field, linspaces = None, None
     for arr in rast_res.data:
-        if arr.typename == 'gscalar':
+        if arr.typename == 'scalar':
             field = arr.data
         if arr.typename == 'linspace':
             linspaces = arr.data
@@ -133,29 +133,37 @@ def save_step_vtk(ses, outname):
     paths = [x for x in step_res.data if 'path' in x.name]
     points = list()
     pot    = list()
+    vel    = list()
     for path in paths:
-        for pt in path.data[:,0:3]:
-            points.append(pt)
-            pot.append(field(pt))
+        for pt in path.data:
+            xyz = pt[0:3]
+            uvw = pt[3:6]
+            points.append(xyz)
+            pot.append(field(xyz))
+            mag = numpy.sqrt(uvw.dot(uvw))
+            print mag, uvw
+            vel.append(mag)
     points = numpy.asarray(points)
     pot = numpy.asarray(pot)
+    vel = numpy.asarray(vel)
 
     if len(paths):
-        ug = tvtk.UnstructuredGrid()    
-        point_type = tvtk.Vertex().cell_type
-        npoints = len(points)
-        cell_types = numpy.array([point_type]*npoints)
-        cell_array = tvtk.CellArray()
-        cells = numpy.array([npoints]+range(npoints))
-        cell_array.set_cells(point_type, cells)
-        
-        ug.set_cells(1, cell_array)
-        ug.points = points
-        ug.point_data.scalars = pot
-        ug.point_data.scalars.name = 'potential'
-        
-        fname = '%s-%s.vtk' % (outname, 'paths')
-        write_data(ug, fname)
+        for flv,data in {'potential':pot, 'velocity':vel}.iteritems():
+            ug = tvtk.UnstructuredGrid()    
+            point_type = tvtk.Vertex().cell_type
+            npoints = len(points)
+            cell_types = numpy.array([point_type]*npoints)
+            cell_array = tvtk.CellArray()
+            cells = numpy.array([npoints]+range(npoints))
+            cell_array.set_cells(point_type, cells)
+
+            ug.set_cells(1, cell_array)
+            ug.points = points
+            ug.point_data.scalars = data
+            ug.point_data.scalars.name = flv
+
+            fname = '%s-%s-%s.vtk' % (outname, 'paths', flv)
+            write_data(ug, fname)
 
 def export(ses, mshfile, save, outname):
     '''

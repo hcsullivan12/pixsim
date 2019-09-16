@@ -41,9 +41,14 @@ def find_data(res, names):
     ret = [None for n in names]
     for i,n in enumerate(names):
         for arr in res.data:
-            if res.typename == n:
+            if arr.typename == n:
                 ret[i] = arr.data
-    return ret
+        assert(ret[i] is not None and 'Could not find data')
+
+    if len(ret) == 1:
+        return ret[0]
+    else:
+        return ret
 
 @click.group()
 @click.option('-c', '--config',  default=None, help = 'Path to configuration file.')
@@ -114,18 +119,18 @@ def cmd_boundary(ctx, config, name):
     save_result(ctx, res)
 
 @cli.command("plot")
-@click.option("-i","--id", default=None, type=int, help="ID of results to use.")
+@click.option("-r","--result_id", default=None, type=int, help="Result ID of results to use.")
 @click.option('-c','--config', default='plotting', help='Section name in config.')
 @click.option('-q','--quantity', default='potential', type=str, help='Quantity to plot (potential/efield).')
 @click.pass_context
-def cmd_plot(ctx, id, config, quantity):
+def cmd_plot(ctx, result_id, config, quantity):
     '''
     Plotting results.
     '''
     ses = ctx.obj['session']
-    bres = get_result(ses, None, id)
+    bres = get_result(ses, None, result_id)
     if bres is None:
-        click.echo("No matching results for id = {}".format(id))
+        click.echo("No matching results for id = {}".format(result_id))
         return
 
     points, linspaces, pot, grad = find_data(bres, ['points', 'linspace', 'scalar', 'vector'])
@@ -142,18 +147,18 @@ def cmd_plot(ctx, id, config, quantity):
 
 @cli.command("raster")
 @click.option("-s","--source", default='boundary', type=str, help="Typename of results to source.")
-@click.option("-i","--id", default=None, type=int, help="ID of results to use.")
+@click.option("-r","--result_id", default=None, type=int, help="ID of results to use.")
 @click.option("-c","--config", default='raster', type=str, help="Section name in config.")
 @click.option('-n','--name', default='raster', type=str, help='Name of result.')
 @click.pass_context
-def cmd_raster(ctx, source, id, config, name):
+def cmd_raster(ctx, source, result_id, config, name):
     '''
     Evaluate solution on a raster of points.
     '''
     ses = ctx.obj['session']
-    bres = get_result(ses, typename=source, id=id)
+    bres = get_result(ses, typename=source, id=result_id)
     if bres is None:
-        click.echo("No matching results for typename or id = {} {}".format(source, id))
+        click.echo("No matching results for typename or id = {} {}".format(source, result_id))
         return
 
     sol = find_data(bres, ['scalar'])
@@ -165,19 +170,19 @@ def cmd_raster(ctx, source, id, config, name):
 
 @cli.command("velocity")
 @click.option("-s","--source", default='raster', type=str, help="Typename of results to source.")
-@click.option("-i","--id", default=None, type=int, help="ID of results to use.")
+@click.option("-r","--result_id", default=None, type=int, help="ID of results to use.")
 @click.option("-c","--config", default='velocity', type=str, help="Section name in config.")
 @click.option('-n','--name', default='velocity', type=str, help='Name of result.')
 @click.pass_context
-def cmd_velocity(ctx, source, id, config, name):
+def cmd_velocity(ctx, source, result_id, config, name):
     '''
     Evaluating velocity on raster.
     '''
 
     ses = ctx.obj['session']
-    rasres = get_result(ses, typename=source, id=id)
+    rasres = get_result(ses, typename=source, id=result_id)
     if rasres is None:
-        click.echo("No matching results for typename or id = {} {}".format(source, id))
+        click.echo("No matching results for typename or id = {} {}".format(source, result_id))
         return
 
     potential, linspace = find_data(rasres, ['scalar', 'linspace'])
@@ -190,62 +195,35 @@ def cmd_velocity(ctx, source, id, config, name):
 
 @cli.command("step")
 @click.option("-s","--source", default='velocity', type=str, help="Typename of results to source.")
-@click.option("-i","--id", default=None, type=int, help="ID of results to use.")
+@click.option("-g","--geoconfig", default='geometry', type=str, help="Section name of geometry in config.")
+@click.option("-r","--result_id", default=None, type=int, help="ID of results to use.")
 @click.option("-c","--config", default='step', type=str, help="Section name in config.")
 @click.option('-n','--name', default='paths', type=str, help='Name of result.')
 @click.pass_context
-def cmd_step(ctx, source, id, config, name):
+def cmd_step(ctx, source, geoconfig, result_id, config, name):
     '''
     Step through velocity field.
     '''
     ses = ctx.obj['session']
-    vres = get_result(ses, typename=source, id=id)
+    vres = get_result(ses, typename=source, id=result_id)
     if vres is None:
-        click.echo("No matching results for typename or id = {} {}".format(source, id))
+        click.echo("No matching results for typename or id = {} {}".format(source, result_id))
         return
     rasres  = get_result(ses, None, vres.parent_id)
     if rasres is None:
         click.echo("No matching results for parent ID = {}".format(vres.parent_id))
         return
     
-    vfield = find_data(vres, ['velocity'])
+    vfield = find_data(vres, ['vector'])
     linspace = find_data(rasres, ['linspace'])
     assert(vfield is not None and 'Velocity field not found')
     assert(linspace is not None and 'linspace not found')
 
     import pixsim.step as step
-    arrays = step.step(vfield, efield, linspace, **ctx.obj['cfg'][config])
+    import pixsim.geometry as geometry
+    pixcoll = geometry.make_pixels(**ctx.obj['cfg'][geoconfig])
+    arrays = step.step(vfield, linspace, pixcoll, **ctx.obj['cfg'][config])
     res = Result(name=name, typename='step', data=arrays, parent=vres)
-    save_result(ctx, res)
-
-@cli.command("stepfilter")
-@click.option("-s","--source", default='step', type=str, help="Typename of results to source.")
-@click.option("-i","--id", default=None, type=int, help="ID of results to use.")
-@click.option("-c","--config", default='stepfilter', type=str, help="Section name in config.")
-@click.option('-n','--name', default='filteredpaths', type=str, help='Name of result.')
-@click.pass_context
-def cmd_step(ctx, source, config, name):
-    '''
-    Filter/truncate steps if pass in pixel volumes.
-    '''
-    ses = ctx.obj['session']
-    sres = get_result(ses, typename=source, id=id)
-    if sres is None:
-        click.echo("No matching results for typename or id = {} {}".format(source, id))
-        return
-    gres = get_result(ses, 'geometry', id=None)
-    if gres is None:
-        click.echo("No matching results for typename = {} {}".format(source))
-        return
-
-    paths = find_data(sres, ['tuples'])
-    geo = find_data(gres, ['tuples'])
-    assert(paths is not None and 'Path data was not found')
-    assert(geo is not None and 'Geo data was not found')
-    
-    import pixsim.step as step
-    arrays = step.truncfilter(paths, geo, **ctx.obj['cfg'][config])
-    res = Result(name=name, typename='step', data=arrays, parent=sres)
     save_result(ctx, res)
 
 @cli.command("current")
@@ -375,14 +353,16 @@ def cmd_update(ctx):
     update(ses)
 
 @cli.command("dump")
-@click.option("-a","--array_id", type=int, default=None, help="Dump array content")
+@click.option("-i","--array_id", type=int, default=None, help="Dump array content")
+@click.option("-r","--results", is_flag=True, help="Dump results.")
+@click.option("-a","--arrays", is_flag=True, help="Dump arrays.")
 @click.pass_context
-def cmd_dump(ctx, array_id):
+def cmd_dump(ctx, array_id, results, arrays):
     '''
     Dump database.
     '''
     ses = ctx.obj['session']
-    dump(ses, array_id)
+    dump(ses, array_id, results, arrays)
 
 def main():
     cli(obj=dict())
