@@ -139,10 +139,10 @@ class BoundPrecision(object):
             return rel
         return min(self.maxrat, rel)
 
-class StuckDetection(object):
-    def __init__(self, distance=0.1, nallowed=1):
+class StopDetection(object):
+    def __init__(self, distance=0.1, geom=None, nallowed=1):
         '''
-        Create a StuckDetection object.
+        Create a StopDetection object.
 
         @param distance: the minimum distance a step is allowed to take before being considered potentially stuck.
         @type distance: float
@@ -153,8 +153,12 @@ class StuckDetection(object):
         self.distance2 = distance**2
         self.nallowed = nallowed
         self.nstuck = 0
+        self.geom = geom
 
     def __call__(self, t1, r1, t2, r2):
+        # check geometry 
+        if self.inside(r2):
+            return True
         d2 = sum([(a-b)**2 for a,b in zip(r1,r2)])
         if d2 > self.distance2:
             self.nstuck = max(0, self.nstuck-1)
@@ -164,14 +168,21 @@ class StuckDetection(object):
             return False
         return True
 
+    def inside(r):
+        if self.geom is None:
+            return False
+        for node in self.geom:
+            if node.inside(r):
+                return True
+
 class CollectSteps(object): 
     '''
     A Stepper visitor that collects all steps and provides a bounds on the precision.
     '''
 
-    Step = namedtuple('Step','t1 r1 v1 t2 r2 error weight')
+    Step = namedtuple('Step','t1 r1 v1 t2 r2 error')
 
-    def __init__(self, stuck=StuckDetection(), bounds = BoundPrecision()):
+    def __init__(self, stuck=StopDetection(), bounds = BoundPrecision()):
         '''
         @param stuck: a callable returning true if the stepping seems stuck
         @type stuck: callable(t1,r1,v1,t2,r2)->bool
@@ -183,7 +194,7 @@ class CollectSteps(object):
         self.bounds = bounds
         self.stuck = stuck
 
-    def __call__(self, t1, r1, v1, t2, r2, error, weight):
+    def __call__(self, t1, r1, v1, t2, r2, error):
         '''
         Collect one step.
 
@@ -211,7 +222,7 @@ class CollectSteps(object):
         @raise StopIteration: if step indicates the stepping is stuck as per the stuck callable
 
         '''
-        self.steps.append(self.Step(t1,r1,v1,t2,r2,error,weight))
+        self.steps.append(self.Step(t1,r1,v1,t2,r2,error))
         if self.stuck(t1,r1,t2,r2):
             raise StopIteration
         return (t2-t1)*self.bounds(error)
@@ -245,9 +256,9 @@ class CollectSteps(object):
         return t
 
     @property
-    def speeds(self):
+    def vel(self):
         '''
-        The N+1 speeds.
+        The N+1 vel.
 
         @type: list of float
         '''
@@ -256,19 +267,6 @@ class CollectSteps(object):
         v = [s.v1 for s in self.steps]
         v.append(self.steps[-1].v1)
         return v
-
-    @property
-    def weights(self):
-        '''
-        The N+1 weights.
-
-        @type: list of float
-        '''
-        if not self.steps:
-            return None
-        w = [s.weight for s in self.steps]
-        w.append(self.steps[-1].weight)
-        return w
 
     @property
     def distance(self):
@@ -287,15 +285,14 @@ class CollectSteps(object):
     @property
     def array(self):
         '''
-        Return array of shape (N+1,5).  Layout of last dimension is (x,y,z,v,t).
+        Return array of shape (N+1,5).  Layout of last dimension is (x,y,z,vx,vy,vz,t).
         '''
         if not self.steps:
             return numpy.ndarray((0,5), dtype=float)
         p = numpy.asarray(self.points)
         t = numpy.asarray(self.times)
-        v = numpy.asarray(self.speeds)
-        w = numpy.asarray(self.weights)
-        return numpy.vstack((p.T,v.T,t.T,w.T)).T
+        v = numpy.asarray(self.vel)
+        return numpy.vstack((p.T,v.T,t.T)).T
         
     def __str__(self):
         if not self.steps:
@@ -336,12 +333,11 @@ def StepperParams(params, **defaults):
     return SP(**p)
 
 class Stepper(object):
-    def __init__(self, velo_fun, weight_func, step_fun = step_rkck, fixed_step=None, **kwds):
+    def __init__(self, velo_fun, step_fun = step_rkck, fixed_step=None, **kwds):
         '''
         Create a stepper.
         '''
         self.velo_fun = velo_fun
-        self.weight_fun = weight_func
         self.step_fun = step_fun
         self.fixed_step = fixed_step
         self._defaults = kwds
@@ -377,9 +373,7 @@ class Stepper(object):
         
             try:
                 vel = self.velo_fun(time, position)
-                weight = self.weight_fun(time, position)
-                print weight
-                dtnext = visitor(time, position, vel, time+dt, pnext, error, weight)
+                dtnext = visitor(time, position, vel, time+dt, pnext, error)
             except StopIteration:
                 print 'StopIteration'
                 break
@@ -397,7 +391,9 @@ class Stepper(object):
             #print '\tit =',count, 'position',position
         return visitor
 
-def step(vfield, linspaces, wfield=None,
+def step(vfield,
+         linspaces,
+         geom,
          step_range = ( (1.5,1.5), (-1,1), (4,6) ),
          step_inc   = (0.1, 0.1, 0.1),
          start_time = 0.0,
@@ -416,19 +412,15 @@ def step(vfield, linspaces, wfield=None,
     def velocity(notused, r):
         return velo(r)
 
-    elec = Field(wfield, linspaces)
-    def weight(notused, r):
-        return elec(r)
-
     # define stepper
     print 'Stepping with',step_fun
-    stepper = Stepper(velocity, weight, lcar=lcar, step_fun=step_fun, **kwds)
+    stepper = Stepper(velocity, lcar=lcar, step_fun=step_fun, **kwds)
 
     xl, yl, zl = step_range
     xr, yr, zr = xl[1]-xl[0], yl[1]-yl[0], zl[1]-zl[0]
     xs, ys, zs = step_inc
 
-    # we will take x as a constat
+    # we will take x as a constamt
     x = xl[0]
     
     from pixsim.models import Array
@@ -443,8 +435,9 @@ def step(vfield, linspaces, wfield=None,
 
             position = (x,y,z)
             vtxs.append( position )
-            visitor = stepper(start_time, position, CollectSteps(StuckDetection(distance=stuck)))
-            paths.append( Array(typename='points', name=name, data=visitor.array) )
+
+            visitor = stepper(start_time, position, CollectSteps(StopDetection(distance=stuck, geom=geom)))
+            paths.append( Array(typename='tuples', name=name, data=visitor.path) )
             print 'Stepped',len(visitor.array),' times from (',x,',',y,',',z,') to (',visitor.array[-1][0],',',visitor.array[-1][1],',',visitor.array[-1][2],')'
     arr = Array(typename='points', name='vtxs', data=numpy.asarray(vtxs))
     return [arr]+paths

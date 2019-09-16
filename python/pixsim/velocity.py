@@ -49,4 +49,4 @@ def drift(potential, linspaces, temperature=89, **kwds):
     # convert velocity to cm/us
     vel = mu*E/1000.
     from pixsim.models import Array
-    return [ Array(typename='gvector', name='vfield', data=vel) ]
+    return [ Array(typename='vector', name='vfield', data=vel) ]

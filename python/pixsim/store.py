@@ -72,9 +72,11 @@ def dump(ses, arr_id):
     
 def get_result(ses, typename=None, id=None):
     """Return result matching type or id."""
-    if typename is not None:
+    if id is not None:
+        return results(ses).get(id)
+    elif typename is not None:
         return results(ses).filter_by(typename=typename).order_by(desc(pixsim.models.Result.created)).first()
-    if id is None:
+    else:
         return None
 
     if id < 0:

@@ -42,7 +42,7 @@ def linear(mshfile, sol,
        u_grad = np.empty([1,1])
 
     from pixsim.models import Array
-    return [ Array(typename='linspace', name='bins',      data = linspaces),
-             Array(typename='gscalar',  name='potential', data = u_reshaped),
-             Array(typename='gvector',  name='gradient',  data = u_grad),
+    return [ Array(typename='linspace', name='linspaces', data = linspaces),
+             Array(typename='scalar',   name='pfield',    data = u_reshaped),
+             Array(typename='vector',   name='efield',    data = u_grad),
              Array(typename='points',   name='points',    data = points) ]
