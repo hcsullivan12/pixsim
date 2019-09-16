@@ -154,6 +154,8 @@ class StopDetection(object):
         self.nallowed = nallowed
         self.nstuck = 0
         self.geom = geom
+        if self.geom is None:
+            print 'Warning: No geometry defined.'
 
     def __call__(self, t1, r1, t2, r2):
         # check geometry 
@@ -168,11 +170,12 @@ class StopDetection(object):
             return False
         return True
 
-    def inside(r):
+    def inside(self, r):
         if self.geom is None:
             return False
         for node in self.geom:
             if node.inside(r):
+                print 'Inside geometry, stopping!'
                 return True
 
 class CollectSteps(object): 
@@ -182,17 +185,17 @@ class CollectSteps(object):
 
     Step = namedtuple('Step','t1 r1 v1 t2 r2 error')
 
-    def __init__(self, stuck=StopDetection(), bounds = BoundPrecision()):
+    def __init__(self, stop=StopDetection(), bounds = BoundPrecision()):
         '''
-        @param stuck: a callable returning true if the stepping seems stuck
-        @type stuck: callable(t1,r1,v1,t2,r2)->bool
+        @param stop: a callable returning true if the stepping needs to stop
+        @type stop: callable(t1,r1,v1,t2,r2)->bool
 
         @param bounds: a callable providing a scaling of dt
         @type bounds: callable(error)->float
         '''
         self.steps = list()
         self.bounds = bounds
-        self.stuck = stuck
+        self.stop = stop
 
     def __call__(self, t1, r1, v1, t2, r2, error):
         '''
@@ -219,11 +222,11 @@ class CollectSteps(object):
         @return: a duration to use for the subsequent step
         @rtype: float
 
-        @raise StopIteration: if step indicates the stepping is stuck as per the stuck callable
+        @raise StopIteration: if step indicates the stepping is stuck or needs to stop
 
         '''
         self.steps.append(self.Step(t1,r1,v1,t2,r2,error))
-        if self.stuck(t1,r1,t2,r2):
+        if self.stop(t1,r1,t2,r2):
             raise StopIteration
         return (t2-t1)*self.bounds(error)
 
@@ -260,7 +263,7 @@ class CollectSteps(object):
         '''
         The N+1 vel.
 
-        @type: list of float
+        @type: list of lists
         '''
         if not self.steps:
             return None
@@ -285,7 +288,7 @@ class CollectSteps(object):
     @property
     def array(self):
         '''
-        Return array of shape (N+1,5).  Layout of last dimension is (x,y,z,vx,vy,vz,t).
+        Return array of shape (N+1,7).  Layout of last dimension is (x,y,z,vx,vy,vz,t).
         '''
         if not self.steps:
             return numpy.ndarray((0,5), dtype=float)
@@ -394,7 +397,7 @@ class Stepper(object):
 def step(vfield,
          linspaces,
          geom,
-         step_range = ( (1.5,1.5), (-1,1), (4,6) ),
+         step_range = ( (1.5,1.5), (-1,1), (-1,1) ),
          step_inc   = (0.1, 0.1, 0.1),
          start_time = 0.0,
          lcar       = 0.01,
@@ -437,7 +440,7 @@ def step(vfield,
             vtxs.append( position )
 
             visitor = stepper(start_time, position, CollectSteps(StopDetection(distance=stuck, geom=geom)))
-            paths.append( Array(typename='tuples', name=name, data=visitor.path) )
+            paths.append( Array(typename='tuples', name=name, data=visitor.array) )
             print 'Stepped',len(visitor.array),' times from (',x,',',y,',',z,') to (',visitor.array[-1][0],',',visitor.array[-1][1],',',visitor.array[-1][2],')'
     arr = Array(typename='points', name='vtxs', data=numpy.asarray(vtxs))
     return [arr]+paths
