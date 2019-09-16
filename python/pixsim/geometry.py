@@ -54,7 +54,7 @@ def wire_grid(geom, pixels,
     '''
     Focusing grid structure made out of wires.
     '''
-    wires = []
+    nelem = 0
     length = grid_dim[0]*pad_spacing
     sp = [pad_offset,0,-0.5*length]
     center = geom.add_cylinder(sp, [0,0,length], 0.5*grid_diameter)
@@ -63,11 +63,12 @@ def wire_grid(geom, pixels,
         wire = geom.add_cylinder(sp, [0,0,length], 0.5*grid_diameter)
         sp = [pad_offset,-1*ywire*pad_spacing,-0.5*length]
         wire = geom.add_cylinder(sp, [0,0,length], 0.5*grid_diameter)
+        nelem += 2
     
     zpos = 0
     ypos = 0.5*pad_spacing
     length = pad_spacing-0.05
-    ypos = set([y for x,y,z in pixels])
+    ypos = set([pix.center[1] for pix in pixels])
     print grid_dim, type(grid_dim), kwds
     zpos = set([n*pad_spacing for n in range(0,int(0.5*grid_dim[1])+1)])
     temp = set([-1*z for z in zpos])
@@ -76,7 +77,8 @@ def wire_grid(geom, pixels,
         for z in zpos:
             sp = [pad_offset,y-0.5*length, z]
             wire = geom.add_cylinder(sp, [0,length,0], 0.5*grid_diameter)
-    return geom
+            nelem += 1
+    return geom, nelem
 
 def box_grid_old(active, geom, pixels, 
              tpc_dim = (2,5,5), 
@@ -146,6 +148,16 @@ def construct_pixels(geom, pixels,
                                  hdim)
     return geom
 
+def add_surface(geofile, bound, values):
+    with open(geofile, 'a') as f:
+        s = '\n//+\nPhysical Surface(\"'+str(bound)+'\") = {'
+        for count,v in enumerate(values, 1):
+            if count < len(values):
+                s += str(v)+', '
+            else:
+                s += str(v)+'};'
+        f.write(s)
+
 class BoxTpc:
     def __init__(self, geofile, **kwds):
         self.geofile = geofile
@@ -155,18 +167,34 @@ class BoxTpc:
         '''
         Builds geometry and writes .geo file for GMSH
         '''
+        shape_inc = {'sphere':1, 'cylinder':3, 'box':6}
 
         # start constructing the geometry
         geom = pygmsh.opencascade.Geometry()
         # active
         active = geom.add_box( [0, -0.5*tpc_dim[1], -0.5*tpc_dim[2]], tpc_dim )
+        # define surfaces, not the best way, but better than doing it manually
+        bound = {'anode':[1], 'cathode':[2], 'walls':[3,4,5,6]}
+        next_surf = 7
+
         # pixels and grid
         if build_pads:
             geom = construct_pixels(geom, pixels, **kwds)
+            for count,pix in enumerate(pixels,1):
+                 _,hdim,center,shape = pix.info()
+                 bound['pixel'+str(count)] = [s for s in range(next_surf,next_surf+shape_inc[shape])]
+                 assert(len(bound['pixel'+str(count)]) == shape_inc[shape])
+                 next_surf += shape_inc[shape]
+
         if build_grid:
-            geom = wire_grid(geom, pixels, **kwds)
+            geom, nelem = wire_grid(geom, pixels, **kwds)
+            bound['grid'] = [s for s in range(next_surf,next_surf+nelem*shape_inc['cylinder']+1)]
 
         mesh = pygmsh.generate_mesh(geom, geo_filename=self.geofile)
+        
+        # add the surfaces
+        for b,v in bound.iteritems():
+            add_surface(self.geofile, b, v)
 
 class FieldCageTpc:
     def __init__(self, geofile):

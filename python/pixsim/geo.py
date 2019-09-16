@@ -17,9 +17,6 @@ class Box():
     def shape(self):
         return 'box'
 
-    def center(self):
-        return self.center
-
     def info(self):
         return self.name, self.hdim, self.center, self.shape()
 
@@ -42,9 +39,6 @@ class Cylinder():
     
     def shape(self):
         return 'cylinder'
-
-    def center(self):
-        return self.center
     
     def info(self):
         return self.name, self.hdim, self.center, self.shape()
@@ -62,9 +56,6 @@ class Sphere():
 
     def shape(self):
         return 'sphere'
-
-    def center(self):
-        return self.center
     
     def info(self):
         return self.name, self.radius, self.center, self.shape()

@@ -1,1 +1,1 @@
-cd ../../ && python setup.py install && cd results/boxtpc3
+cd ../ && python setup.py install && cd boxtpc3
