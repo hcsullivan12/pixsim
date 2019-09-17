@@ -29,10 +29,10 @@ def results(ses):
 def arrays(ses):
     return ses.query(pixsim.models.Array)
 
-def get_array(ses, typename=None, id=None):
-    """Return array matching typename or id."""
-    if typename is not None:
-        return arrays(ses).filter_by(typename=typename).order_by(desc(pixsim.models.Array.created)).first()
+def get_array(ses, name=None, id=None):
+    """Return array matching name or id."""
+    if name is not None:
+        return arrays(ses).filter_by(name=name).order_by(desc(pixsim.models.Array.created)).first()
     if id is None:
         return None
 
@@ -80,16 +80,14 @@ def dump(ses, arr_id, results, arrays):
     else:
         dump_table(ses)
     
-def get_result(ses, typename=None, id=None):
+def get_result(ses, name=None, id=None):
     """Return result matching type or id."""
     if id is not None:
-        return results(ses).get(id)
-    elif typename is not None:
-        return results(ses).filter_by(typename=typename).order_by(desc(pixsim.models.Result.created)).first()
+        if id < 0:
+            return results(ses).order_by(desc(pixsim.models.Result.id)).first()
+        else:
+            return results(ses).get(id)
+    elif name is not None:
+        return results(ses).filter_by(name=name).order_by(desc(pixsim.models.Result.created)).first()
     else:
         return None
-
-    if id < 0:
-        return results(ses).order_by(desc(pixsim.models.Result.id)).first()
-    else:
-        return results(ses).get(id)

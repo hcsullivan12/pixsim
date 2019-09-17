@@ -43,7 +43,7 @@ def find_data(res, names):
         for arr in res.data:
             if arr.typename == n:
                 ret[i] = arr.data
-        assert(ret[i] is not None and 'Could not find data')
+        assert(ret[i] is not None)
 
     if len(ret) == 1:
         return ret[0]
@@ -101,8 +101,6 @@ def cmd_gengeo(ctx, config, output):
     tocall = eval("geometry.%s" % ctx.obj['cfg'][config]['method'])
     geo = tocall(output)
     geo.construct_geometry(pixcoll, **ctx.obj['cfg'][config])
-    #res = Result(name='pixels', typename='geometry', data=arrays)
-    #save_result(ctx, res)
 
 @cli.command("boundary")
 @click.option('-c','--config', default='boundary', help='Section name in config.')
@@ -121,20 +119,26 @@ def cmd_boundary(ctx, config, name):
 @cli.command("plot")
 @click.option("-r","--result_id", default=None, type=int, help="Result ID of results to use.")
 @click.option('-c','--config', default='plotting', help='Section name in config.')
-@click.option('-q','--quantity', default='potential', type=str, help='Quantity to plot (potential/efield).')
+@click.option('-q','--quantity', default='potential', type=str, help='Quantity to plot (potential/efield/waveforms).')
 @click.pass_context
 def cmd_plot(ctx, result_id, config, quantity):
     '''
     Plotting results.
     '''
+    click.echo("Plotting {} results for id = {}".format(quantity, result_id))
+
     ses = ctx.obj['session']
-    bres = get_result(ses, None, result_id)
-    if bres is None:
+    res = get_result(ses, None, result_id)
+    if res is None:
         click.echo("No matching results for id = {}".format(result_id))
         return
 
-    points, linspaces, pot, grad = find_data(bres, ['points', 'linspace', 'scalar', 'vector'])
-
+    points, linspaces, pot, grad, waveforms = None, None, None, None, None
+    if quantity == 'potential' or quantity == 'gradient':
+        points, linspaces, pot, grad = find_data(res, ['points', 'linspace', 'scalar', 'vector'])
+    elif quantity == 'waveforms':
+        waveforms = [arr.data for arr in res.data]
+        
     import pixsim.plotting as plt
     if quantity == 'potential':
         plt.plot_potential(ctx.obj['mesh_filename'], linspaces, points, pot, **ctx.obj['cfg'][config])
@@ -142,11 +146,14 @@ def cmd_plot(ctx, result_id, config, quantity):
     elif quantity == 'gradient':
         plt.plot_efield(ctx.obj['mesh_filename'], grad, **ctx.obj['cfg'][config])
         return
+    elif quantity == 'waveforms':
+        plt.plot_waveforms(waveforms, **ctx.obj['cfg'][config])
+        return
     else:
         click.echo("Cannot plot quantity {}".format(quantity))
 
 @cli.command("raster")
-@click.option("-s","--source", default='boundary', type=str, help="Typename of results to source.")
+@click.option("-s","--source", default='solution', type=str, help="Name of results to source.")
 @click.option("-r","--result_id", default=None, type=int, help="ID of results to use.")
 @click.option("-c","--config", default='raster', type=str, help="Section name in config.")
 @click.option('-n','--name', default='raster', type=str, help='Name of result.')
@@ -156,9 +163,9 @@ def cmd_raster(ctx, source, result_id, config, name):
     Evaluate solution on a raster of points.
     '''
     ses = ctx.obj['session']
-    bres = get_result(ses, typename=source, id=result_id)
+    bres = get_result(ses, name=source, id=result_id)
     if bres is None:
-        click.echo("No matching results for typename or id = {} {}".format(source, result_id))
+        click.echo("No matching results for name or id = {} {}".format(source, result_id))
         return
 
     sol = find_data(bres, ['scalar'])
@@ -169,7 +176,7 @@ def cmd_raster(ctx, source, result_id, config, name):
     save_result(ctx, res)
 
 @cli.command("velocity")
-@click.option("-s","--source", default='raster', type=str, help="Typename of results to source.")
+@click.option("-s","--source", default='raster', type=str, help="Name of results to source.")
 @click.option("-r","--result_id", default=None, type=int, help="ID of results to use.")
 @click.option("-c","--config", default='velocity', type=str, help="Section name in config.")
 @click.option('-n','--name', default='velocity', type=str, help='Name of result.')
@@ -180,9 +187,9 @@ def cmd_velocity(ctx, source, result_id, config, name):
     '''
 
     ses = ctx.obj['session']
-    rasres = get_result(ses, typename=source, id=result_id)
+    rasres = get_result(ses, name=source, id=result_id)
     if rasres is None:
-        click.echo("No matching results for typename or id = {} {}".format(source, result_id))
+        click.echo("No matching results for name or id = {} {}".format(source, result_id))
         return
 
     potential, linspace = find_data(rasres, ['scalar', 'linspace'])
@@ -194,7 +201,7 @@ def cmd_velocity(ctx, source, result_id, config, name):
     save_result(ctx, res)
 
 @cli.command("step")
-@click.option("-s","--source", default='velocity', type=str, help="Typename of results to source.")
+@click.option("-s","--source", default='velocity', type=str, help="Name of results to source.")
 @click.option("-g","--geoconfig", default='geometry', type=str, help="Section name of geometry in config.")
 @click.option("-r","--result_id", default=None, type=int, help="ID of results to use.")
 @click.option("-c","--config", default='step', type=str, help="Section name in config.")
@@ -205,9 +212,9 @@ def cmd_step(ctx, source, geoconfig, result_id, config, name):
     Step through velocity field.
     '''
     ses = ctx.obj['session']
-    vres = get_result(ses, typename=source, id=result_id)
+    vres = get_result(ses, name=source, id=result_id)
     if vres is None:
-        click.echo("No matching results for typename or id = {} {}".format(source, result_id))
+        click.echo("No matching results for name or id = {} {}".format(source, result_id))
         return
     rasres  = get_result(ses, None, vres.parent_id)
     if rasres is None:
@@ -227,46 +234,33 @@ def cmd_step(ctx, source, geoconfig, result_id, config, name):
     save_result(ctx, res)
 
 @cli.command("current")
-@click.option("-s","--step", default='filteredsteps', type=str, help="Typename of step results.")
-@click.option("-c","--config", default='step', type=str, help="Section name in config.")
-@click.option('-n','--name', default='paths', type=str, help='Name of result.')
+@click.option("-s","--step", default='paths', type=str, help="Name of step results.")
+@click.option("-r","--raster", default='weightraster', type=str, help="Name of raster results.")
+@click.option("-c","--config", default='current', type=str, help="Section name in config.")
+@click.option('-n','--name', default='waveforms', type=str, help='Name of result.')
 @click.pass_context
-def cmd_step(ctx, boundary, step, config, name):
+def cmd_step(ctx, step, raster, config, name):
     '''
     Calculate the current on pixels.
     '''
     ses = ctx.obj['session']
-    sres = get_result(ses, typename=step, id=None)
+    sres = get_result(ses, name=step, id=None)
     if sres is None:
-        click.echo("No matching results for typename = {}".format(source))
+        click.echo("No matching results for name = {}".format(step))
         return
-    ses = ctx.obj['session']
-    arr = get_array(ses, None, 70).data
-    waveform = list()
-    times = list()
-    import numpy as np
-    print arr.shape
-    for x in arr:
-        print x 
-        if x[0] < 0.27:
-            continue
-        print x[4]
-        value = np.dot(x[4:7],x[7:])
-        waveform.append(-1*value)
-        times.append(x[6])
-    arr = [ Array(typename='gscalar', name='scalar', data = np.asarray(waveform))]
-    res = Result(name='heythere', typename='step', data=arr)
+    rasres = get_result(ses, name=raster, id=None)
+    if rasres is None:
+        click.echo("No matching results for name = {}".format(raster))
+        return
+
+    efield, linspaces = find_data(rasres, ['vector', 'linspace'])
+    paths  = [p.data for p in sres.data if 'path' in p.name]
+    pnames = [p.name for p in sres.data]
+
+    import pixsim.current as current
+    arrays = current.compute(efield, linspaces, paths, pnames)
+    res = Result(name=name, typename='current', data=arrays, parent=rasres)
     save_result(ctx, res)
-
-    times = np.asarray(times)
-
-    import matplotlib.pyplot as plt
-    plt.plot(times, arr[0].data)
-    plt.xlabel("t [us]",fontsize=20)
-    plt.ylabel("current [arb]",fontsize=20)
-    plt.xticks(fontsize=20)
-    plt.yticks(fontsize=20)
-    plt.show()
 
 @cli.command("delete")
 @click.option("-a","--array_id", type=int, default=None, help="Array id to delete")

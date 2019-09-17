@@ -141,7 +141,6 @@ def save_step_vtk(ses, outname):
             points.append(xyz)
             pot.append(field(xyz))
             mag = numpy.sqrt(uvw.dot(uvw))
-            print mag, uvw
             vel.append(mag)
     points = numpy.asarray(points)
     pot = numpy.asarray(pot)

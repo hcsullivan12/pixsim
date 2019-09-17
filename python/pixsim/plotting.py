@@ -1,5 +1,6 @@
 import bempp.api
 import pixsim.bem as bem
+import numpy as np
 
 def plot_efield(mshfile, sol,
                 efield_linspaces = ( (0,2,80), (-3,3,60), (2,8,60) ),
@@ -65,7 +66,7 @@ def plot_efield(mshfile, sol,
     plt.show()
     
 
-def plot_potential(mshfile, bins, points, pot, height=0.2, draw_contours=1, **kwds):
+def plot_potential(mshfile, bins, points, pot, height=0.2, draw_potential=1, draw_contours=1, **kwds):
     '''
     Area to plot solution.
     '''
@@ -86,13 +87,14 @@ def plot_potential(mshfile, bins, points, pot, height=0.2, draw_contours=1, **kw
     plt.subplot(121)
     data = interp[:,0,:,0]
     plt.figure(figsize = (20,20))
-    plt.imshow(data,cmap='jet', extent=(extents[2][0],extents[2][1],extents[0][0],extents[0][1]),origin='lower')
+    if draw_potential:
+        plt.imshow(data,cmap='jet', extent=(extents[2][0],extents[2][1],extents[0][0],extents[0][1]),origin='lower')
     plt.xlabel("z [cm]",fontsize=20)
     plt.ylabel("x [cm]",fontsize=20)
     plt.xticks(fontsize=20)
     plt.yticks(fontsize=20)
     if draw_contours:
-        contours = plt.contour(grid_z[:,0,:], grid_x[:,0,:], data, [0.005,0.010,0.017,0.025,0.050,0.075,0.1,0.2,0.3], colors='black')
+        contours = plt.contour(grid_z[:,0,:], grid_x[:,0,:], data, [0.010,0.017,0.025,0.050,0.075,0.1,0.2,0.3], colors='black')
         plt.clabel(contours, inline=True, fontsize=8)
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     ax = plt.gca()
@@ -102,3 +104,18 @@ def plot_potential(mshfile, bins, points, pot, height=0.2, draw_contours=1, **kw
     cb.set_label('potential [V]', fontsize=20)
     plt.show()
     
+def plot_waveforms(waveforms, **kwds):
+    waveforms = np.asarray(waveforms)
+    wvfs = waveforms[0:-1:2]
+
+    import matplotlib.pyplot as plt    
+    for w in wvfs:
+        x = np.asarray(w[:,0])
+        y = np.asarray(w[:,1])
+        plt.plot(x, y)
+
+    plt.xlabel("t [us]",fontsize=20)
+    plt.ylabel("current [arb]",fontsize=20)
+    plt.xticks(fontsize=20)
+    plt.yticks(fontsize=20)
+    plt.show()
