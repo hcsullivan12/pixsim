@@ -293,31 +293,31 @@ def cmd_step(ctx, source, geoconfig, name):
     with open(source) as f:
         pixelline = f.readline().split()
         assert(pixelline[0]=='pixels' and 'Header assumed to be \'pixels\'')
-        do pixels = [pix for pix in pixelline[1:]]
+        do_pixels = [pix for pix in pixelline[1:]]
         while True:
             linevec = f.readline().split()
             if len(linevec) < 1:
                 break
-            pos = (float(x) for x in linevec)
+            pos = [float(x) for x in linevec]
             assert(len(pos) == 3)
-            do_pos.append(x)
+            do_pos.append(pos)
 
     # generate 
-    for pix in do_pixels:
-        filename = 'pixel'+str(pix)+'_'+name+'.txt'
+    for pid in do_pixels:
+        filename = 'pixel'+str(pid)+'_'+name+'.txt'
         for count,rpos in enumerate(do_pos,1):
-            callit = 'pixel'+str(pix)+'_'+name+str(count)
+            callit = name+str(count)
             # find the position of this pixel
             cent = None
             for pix in pixcoll:
-                name,hdim,center,shape = pix.info()
-                if pix in name:
+                pixelname,hdim,center,shape = pix.info()
+                if pid in pixelname:
                     cent = center
                     break
             assert(cent is not None)
             gpos = [rpos[i]+cent[i] for i in range(0,3)]
             with open(filename, 'w') as f:
-                out = callit + str(gpos[0]) + str(gpos[1]) + str(gpos[2])
+                out = callit+' '+str(gpos[0])+' '+str(gpos[1])+' '+str(gpos[2])
                 f.write(out+'\n')
 
 
