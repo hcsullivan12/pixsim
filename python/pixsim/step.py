@@ -154,8 +154,6 @@ class StopDetection(object):
         self.nallowed = nallowed
         self.nstuck = 0
         self.geom = geom
-        if self.geom is None:
-            print 'Warning: No geometry defined.'
 
     def __call__(self, t1, r1, t2, r2):
         # check geometry 
@@ -172,6 +170,7 @@ class StopDetection(object):
 
     def inside(self, r):
         if self.geom is None:
+            print 'Warning: No geometry defined.'
             return False
         for node in self.geom:
             if node.inside(r):
@@ -394,6 +393,44 @@ class Stepper(object):
             #print '\tit =',count, 'position',position
         return visitor
 
+def get_vertices(step_range, step_inc, stepfile):
+    '''
+    Return list of vertices based on input from stepfile or on a patch
+    determined by step_range and step_inc.
+    '''
+    vtxs = list()
+
+    # stepfile takes precedence 
+    if stepfile is not None:
+        try:
+            f = open(stepfile)
+        except:
+            print 'Stepfile',stepfile,'does not exist!'
+
+        # expecting list of x y z 
+        while True:
+            linevec = f.readline().split()
+            if len(linevec)<1:
+                break
+            x,y,z = float(linevec[0]), float(linevec[1]), float(linevec[2])
+            vtxs.append((x,y,z))
+        f.close()
+        return vtxs
+
+    # otherwise create a patch
+    xl, yl, zl = step_range
+    xr, yr, zr = xl[1]-xl[0], yl[1]-yl[0], zl[1]-zl[0]
+    xs, ys, zs = step_inc
+
+    # we will take x as a constamt
+    x = xl[0]
+
+    for y in numpy.linspace(yl[0], yl[1], 1+int(yr/ys)):
+        for z in numpy.linspace(zl[0], zl[1], 1+int(zr/zs)):
+            vtxs.append((x,y,z))
+    return vtxs
+
+
 def step(vfield,
          linspaces,
          geom,
@@ -402,6 +439,7 @@ def step(vfield,
          start_time = 0.0,
          lcar       = 0.01,
          stuck      = 0.01,
+         stepfile   = None,
          stepper    = 'rkck', **kwds):
     '''
     Return paths stepped through vfield starting at many points on a
@@ -419,29 +457,21 @@ def step(vfield,
     print 'Stepping with',step_fun
     stepper = Stepper(velocity, lcar=lcar, step_fun=step_fun, **kwds)
 
-    xl, yl, zl = step_range
-    xr, yr, zr = xl[1]-xl[0], yl[1]-yl[0], zl[1]-zl[0]
-    xs, ys, zs = step_inc
-
-    # we will take x as a constamt
-    x = xl[0]
+    # get step vertices
+    assert(stepfile is not None)
+    vtxs = get_vertices(step_range, step_inc, stepfile)
     
     from pixsim.models import Array
     paths = list()
-    vtxs  = list()
     count = 0
-
-    for y in numpy.linspace(yl[0], yl[1], 1+int(yr/ys)):
-        for z in numpy.linspace(zl[0], zl[1], 1+int(zr/zs)):
+    for position in vtxs:
             name = 'path'+str(count)
             count += 1
-
-            position = (x,y,z)
-            vtxs.append( position )
-
+            x,y,z = position
             visitor = stepper(start_time, position, CollectSteps(StopDetection(distance=stuck, geom=geom)))
             paths.append( Array(typename='tuples', name=name, data=visitor.array) )
             print 'Stepped',len(visitor.array),' times from (',x,',',y,',',z,') to (',visitor.array[-1][0],',',visitor.array[-1][1],',',visitor.array[-1][2],')'
+    
     arr = Array(typename='points', name='vtxs', data=numpy.asarray(vtxs))
     return [arr]+paths
 

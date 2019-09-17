@@ -32,14 +32,15 @@ def make_pixels(pad_spacing   = 0.4,
 
     import pixsim.geo as geoobj
     geo = list()
-    for cent in pixels:
+    for count,cent in enumerate(pixels,1):
         pad = None
+        name = 'pixel'+str(count)
         if pad_shape == 'box':
-            pad = geoobj.Box('pixel',0.5*grid_diameter,pad_rmax,pad_rmax,cent)
+            pad = geoobj.Box(name,0.5*grid_diameter,pad_rmax,pad_rmax,cent)
         elif pad_shape == 'cylinder':
-            pad = geoobj.Cylinder('pixel',pad_rmax,0.5*grid_diameter,cent,np.asarray([1,0,0]))
+            pad = geoobj.Cylinder(name,pad_rmax,0.5*grid_diameter,cent,np.asarray([1,0,0]))
         elif pad_shape == 'sphere':
-            pad = geoobj.Sphere('pixel',pad_rmax,cent)
+            pad = geoobj.Sphere(name,pad_rmax,cent)
         else:
             raise ValueError('Shape not supported: %s' % pad_shape)
         geo.append(pad)
@@ -180,10 +181,10 @@ class BoxTpc:
         # pixels and grid
         if build_pads:
             geom = construct_pixels(geom, pixels, **kwds)
-            for count,pix in enumerate(pixels,1):
-                 _,hdim,center,shape = pix.info()
-                 bound['pixel'+str(count)] = [s for s in range(next_surf,next_surf+shape_inc[shape])]
-                 assert(len(bound['pixel'+str(count)]) == shape_inc[shape])
+            for pix in pixels:
+                 name,hdim,center,shape = pix.info()
+                 bound[name] = [s for s in range(next_surf,next_surf+shape_inc[shape])]
+                 assert(len(bound[name]) == shape_inc[shape])
                  next_surf += shape_inc[shape]
 
         if build_grid:

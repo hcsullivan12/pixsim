@@ -54,8 +54,10 @@ def find_data(res, names):
 @click.option('-c', '--config',  default=None, help = 'Path to configuration file.')
 @click.option('-s', '--store',   default=None, help = 'Set data store file.')
 @click.option('-m', '--mshfile', default=None, type=str, help = 'Path to mesh file.')
+@click.option('-p', '--param', type=str, multiple=True,
+              help='Set section:key=value overriding any from the configuration file')
 @click.pass_context
-def cli(ctx, config, store, mshfile):
+def cli(ctx, config, store, mshfile, param):
     import pixsim.store
     if config:
         import pixsim.config
@@ -66,6 +68,22 @@ def cli(ctx, config, store, mshfile):
         ctx.obj['session'] = pixsim.store.session(store)
     if mshfile:
         ctx.obj['mesh_filename'] = str(mshfile)
+
+    from pixsim.config import convert
+    params = dict()
+    for p in param:
+        s,k,v = p.replace(':',' ').replace('=', ' ').split()
+        s,k = str(s),str(k)
+        temp = convert({k:v})
+        if s not in params:
+            params[s] = temp
+        else:
+            params[s].update(temp)
+    if config:
+        cfg = ctx.obj['cfg']
+        for sec,var in params.iteritems():
+            if sec in cfg:
+                cfg[sec].update(var)
     return
 
 @cli.command("config")
@@ -74,16 +92,17 @@ def cmd_config(ctx):
     '''
     Dump configuration.
     '''
-
     cfg = ctx.obj['cfg']
 
     click.echo('Store: %s' % ctx.obj['store'])
     click.echo('Mesh: %s' % ctx.obj['mesh_filename'])
     click.echo('Config: %s' % ctx.obj['config_filename'])
 
-    click.echo("Configuration sections:")
-    for sec in cfg.keys():
-        print sec
+    click.echo('\nConfiguration:')
+    for sec,param in cfg.iteritems():
+        click.echo('\n%s: ' % sec)
+        for var,val in param.iteritems():
+            click.echo('{} = {}'.format(var,val))
         
 @cli.command("gengeo")
 @click.option('-c','--config', default='geometry',  type=str, help='Section name in config.')
@@ -95,18 +114,40 @@ def cmd_gengeo(ctx, config, output):
     using pygmsh api. Surfaces and mesh can later be defined
     and exported using GMSH.
     '''
-
     import pixsim.geometry as geometry
     pixcoll = geometry.make_pixels(**ctx.obj['cfg'][config])
     tocall = eval("geometry.%s" % ctx.obj['cfg'][config]['method'])
     geo = tocall(output)
     geo.construct_geometry(pixcoll, **ctx.obj['cfg'][config])
 
+@cli.command("domain_map")
+@click.option('-c','--config', default='geometry',  type=str, help='Section name in config.')
+@click.option('-o','--output', default='domainmap.txt', type=str, help='The name of the output text file.')
+@click.pass_context
+def cmd_gengeo(ctx, config, output):
+    '''
+    Generate domain/pixel map from msh file
+    '''
+    import meshio
+    mesh = meshio.read(ctx.obj['mesh_filename'])
+    domains = dict()
+    for n,v in mesh.field_data.iteritems():
+        domains[n] = v[0]
+    import pixsim.geometry as geometry
+    pixcoll = geometry.make_pixels(**ctx.obj['cfg'][config])
+    with open(output, 'w') as f:
+        for pix in pixcoll:
+            name,hdim,center,shape = pix.info()
+            dom = domains[name]
+            out = [dom, name, center[0], center[1], center[2]]
+            out = str(out).strip('[]').replace(',',' ').replace('\'','')
+            f.write(out+'\n')
+
 @cli.command("boundary")
 @click.option('-c','--config', default='boundary', help='Section name in config.')
 @click.option('-n','--name', default='solution', type=str, help='Name of result.')
 @click.pass_context
-def cmd_boundary(ctx, config, name):
+def cmd_boundary(ctx, config, name, params):
     '''
     Solve boundary value problem. Takes the input msh file and solves for 
     dirichlet and nuemann coefficients on the boundaries.
@@ -229,6 +270,7 @@ def cmd_step(ctx, source, geoconfig, result_id, config, name):
     import pixsim.step as step
     import pixsim.geometry as geometry
     pixcoll = geometry.make_pixels(**ctx.obj['cfg'][geoconfig])
+    assert(len(pixcoll) > 0)
     arrays = step.step(vfield, linspace, pixcoll, **ctx.obj['cfg'][config])
     res = Result(name=name, typename='step', data=arrays, parent=vres)
     save_result(ctx, res)
