@@ -412,8 +412,8 @@ def get_vertices(step_range, step_inc, stepfile):
             linevec = f.readline().split()
             if len(linevec)<1:
                 break
-            x,y,z = float(linevec[0]), float(linevec[1]), float(linevec[2])
-            vtxs.append((x,y,z))
+            name,x,y,z = str(linevec[0]), float(linevec[1]), float(linevec[2]), float(linevec[3])
+            vtxs.append([name,(x,y,z)])
         f.close()
         return vtxs
 
@@ -424,10 +424,12 @@ def get_vertices(step_range, step_inc, stepfile):
 
     # we will take x as a constamt
     x = xl[0]
-
+    count = 0
     for y in numpy.linspace(yl[0], yl[1], 1+int(yr/ys)):
         for z in numpy.linspace(zl[0], zl[1], 1+int(zr/zs)):
-            vtxs.append((x,y,z))
+            name = 'path'+str(count)
+            count += 1
+            vtxs.append([name,(x,y,z)])
     return vtxs
 
 
@@ -462,17 +464,17 @@ def step(vfield,
     vtxs = get_vertices(step_range, step_inc, stepfile)
     
     from pixsim.models import Array
-    paths = list()
-    count = 0
-    for position in vtxs:
-            name = 'path'+str(count)
-            count += 1
+    paths, start = list(), list()
+    for vtx in vtxs:
+            name  = vtx[0]
+            position = vtx[1]
             x,y,z = position
+            start.append(position)
             visitor = stepper(start_time, position, CollectSteps(StopDetection(distance=stuck, geom=geom)))
             paths.append( Array(typename='tuples', name=name, data=visitor.array) )
             print 'Stepped',len(visitor.array),' times from (',x,',',y,',',z,') to (',visitor.array[-1][0],',',visitor.array[-1][1],',',visitor.array[-1][2],')'
     
-    arr = Array(typename='points', name='vtxs', data=numpy.asarray(vtxs))
+    arr = Array(typename='points', name='vtxs', data=numpy.asarray(start))
     return [arr]+paths
 
 

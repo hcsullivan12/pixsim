@@ -147,7 +147,7 @@ def cmd_gengeo(ctx, config, output):
 @click.option('-c','--config', default='boundary', help='Section name in config.')
 @click.option('-n','--name', default='solution', type=str, help='Name of result.')
 @click.pass_context
-def cmd_boundary(ctx, config, name, params):
+def cmd_boundary(ctx, config, name):
     '''
     Solve boundary value problem. Takes the input msh file and solves for 
     dirichlet and nuemann coefficients on the boundaries.
@@ -274,6 +274,52 @@ def cmd_step(ctx, source, geoconfig, result_id, config, name):
     arrays = step.step(vfield, linspace, pixcoll, **ctx.obj['cfg'][config])
     res = Result(name=name, typename='step', data=arrays, parent=vres)
     save_result(ctx, res)
+
+@cli.command("gensteps")
+@click.option("-s","--source", default='step_template.txt', type=str, help="Name of template file.")
+@click.option("-g","--geoconfig", default='geometry', type=str, help="Section name of geometry in config.")
+@click.option('-n','--name', default='vtx', type=str, help='Name of result.')
+@click.pass_context
+def cmd_step(ctx, source, geoconfig, name):
+    '''
+    Generate steps. Read from template text file which contains pixel IDs 
+    and relative starting positions. Generate step files containing
+    global positions for each pixel.
+    '''
+    import pixsim.geometry as geometry
+    pixcoll = geometry.make_pixels(**ctx.obj['cfg'][geoconfig])
+
+    do_pixels, do_pos = list(), list()
+    with open(source) as f:
+        pixelline = f.readline().split()
+        assert(pixelline[0]=='pixels' and 'Header assumed to be \'pixels\'')
+        do pixels = [pix for pix in pixelline[1:]]
+        while True:
+            linevec = f.readline().split()
+            if len(linevec) < 1:
+                break
+            pos = (float(x) for x in linevec)
+            assert(len(pos) == 3)
+            do_pos.append(x)
+
+    # generate 
+    for pix in do_pixels:
+        filename = 'pixel'+str(pix)+'_'+name+'.txt'
+        for count,rpos in enumerate(do_pos,1):
+            callit = 'pixel'+str(pix)+'_'+name+str(count)
+            # find the position of this pixel
+            cent = None
+            for pix in pixcoll:
+                name,hdim,center,shape = pix.info()
+                if pix in name:
+                    cent = center
+                    break
+            assert(cent is not None)
+            gpos = [rpos[i]+cent[i] for i in range(0,3)]
+            with open(filename, 'w') as f:
+                out = callit + str(gpos[0]) + str(gpos[1]) + str(gpos[2])
+                f.write(out+'\n')
+
 
 @cli.command("current")
 @click.option("-s","--step", default='paths', type=str, help="Name of step results.")
