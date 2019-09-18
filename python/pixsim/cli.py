@@ -426,39 +426,28 @@ def cmd_average(ctx, start, end, name):
 def cmd_rm(ctx):
     return
 
-@cmd_rm.command('array')
-@click.option("-i","--array_id", type=int, default=None, 
-    help="Array id to delete. \n\
-        Ex. \n\
-        -i 5 deletes id 5. \n\
-        -i -2 deletes second to last id.")
-@click.option("-r","--id_range", type=str, default=None, 
-    help="Range of ids to delete. \n\
-        Ex. \n\
-        -r 2:6 deletes ids ranging from 2 to and including 6.\n\
-        -r 2: or 2:-1 deletes ids ranging from 2 to the end.")
-@click.pass_context
-def cmd_array(ctx, array_id, id_range):
+def do_removal(ses, objid, id_range, flv):
     '''
-    Remove arrays from the store. Tread lightly!
+    Wrapper for removing arrays/results.
     '''
-    ses = ctx.obj['session']
     from pixsim.store import get_last_ids
+    total_ids = get_last_ids(ses)[flv]
+    getmth = eval('get_'+str(flv))
 
-    if array_id is not None:
-        if array_id < 0:
-            array_id = total_ids - abs(array_id) + 1
-        array = get_array(ses, None, array_id)
-        if array is None:
-            click.echo("No matching array for id = {}".format(array_id))
+    if objid is not None:
+        if objid < 0:
+            objid = total_ids - abs(objid) + 1
+        obj = getmth(ses, None, objid)
+        if obj is None:
+            click.echo("No matching {} for id = {}".format(flv, objid))
             return
-        do_it = click.prompt("Remove array {}? (y/n)".format(array_id), default='y')
+        do_it = click.prompt("Remove {} {}? (y/n)".format(flv, objid), default='y')
         if 'y' == do_it:
-            click.echo("Removing array %d %s %s" % (array.id,array.name,array.typename))
-            ses.delete(array)
+            click.echo("Removing %s %d %s %s" % (flv,obj.id,obj.name,obj.typename))
+            ses.delete(obj)
             update_ses(ses)
         else:
-            click.echo("Not removing array")
+            click.echo("Not removing {}s".format(flv))
         return
 
     if id_range is not None:
@@ -481,20 +470,58 @@ def cmd_array(ctx, array_id, id_range):
         if first_id > last_id:
             last_id = first_id
 
-        do_it = click.prompt("Remove arrays {} through {}? (y/n)".format(first_id, last_id), default='y')
+        do_it = click.prompt("Remove {}s {} through {}? (y/n)".format(flv, first_id, last_id), default='y')
         if 'y' == do_it:
             currid = first_id
-            array = get_result(ses, None, currid)
-            while array is not None and array.id <= last_id:
-                click.echo("removing array %d %s %s" % (array.id,array.name,array.typename))
-                ses.delete(array)
+            obj = getmth(ses, None, currid)
+            while obj is not None and obj.id <= last_id:
+                click.echo("Removing %s %d %s %s" % (flv,obj.id,obj.name,obj.typename))
+                ses.delete(obj)
                 currid += 1
-                array = get_result(ses, None, currid)
+                obj = getmth(ses, None, currid)
             update_ses(ses)
             return
         else:
-            click.echo("Not removing arrays")
+            click.echo("Not removing {}s".format(flv))
             return
+
+@cmd_rm.command('array')
+@click.option("-i","--array_id", type=int, default=None, 
+    help="Array id to delete. \n\
+        Ex. \n\
+        -i 5 deletes id 5. \n\
+        -i -2 deletes second to last id.")
+@click.option("-r","--id_range", type=str, default=None, 
+    help="Range of ids to delete. \n\
+        Ex. \n\
+        -r 2:6 deletes ids ranging from 2 to and including 6.\n\
+        -r 2: or 2:-1 deletes ids ranging from 2 to the end.")
+@click.pass_context
+def cmd_array(ctx, array_id, id_range):
+    '''
+    Remove arrays from the store. Tread lightly!
+    '''
+    ses = ctx.obj['session']
+    do_removal(ses, array_id, id_range, 'array')
+
+@cmd_rm.command('result')
+@click.option("-i","--result_id", type=int, default=None, 
+    help="Result id to delete. \n\
+        Ex. \n\
+        -i 5 deletes id 5. \n\
+        -i -2 deletes second to last id.")
+@click.option("-r","--id_range", type=str, default=None, 
+    help="Range of ids to delete. \n\
+        Ex. \n\
+        -r 2:6 deletes ids ranging from 2 to and including 6.\n\
+        -r 2: or 2:-1 deletes ids ranging from 2 to the end.")
+@click.pass_context
+def cmd_array(ctx, result_id, id_range):
+    '''
+    Remove results from the store. Tread lightly!
+    '''
+    ses = ctx.obj['session']
+    do_removal(ses, result_id, id_range, 'result')
 
 @cli.command("rename")
 @click.option("-r","--result_id", type=int, default=None, help="Result ID to rename")
