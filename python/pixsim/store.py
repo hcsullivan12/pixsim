@@ -41,9 +41,9 @@ def get_array(ses, name=None, id=None):
     else:
         return arrays(ses).get(id)
 
-def dump_array(ses, arr_id):
-    print 'Contents of',arrays(ses).get(arr_id).name,'...'
-    arr = arrays(ses).get(arr_id).data
+def dump_array(ses, arr):
+    print 'Contents of',arr.name,'...'
+    arr = arr.data
     dim = list(arr.shape)
     print 'Shape =',arr.shape
     if len(dim) == 4:
@@ -54,30 +54,36 @@ def dump_array(ses, arr_id):
     else:
         print arr
 
-def dump_results(ses):
-    print 'Results...'
-    for res in results(ses):
-        print 'id: %-2s  name: %-10s  typename: %-10s  data: %-2s  parent: %-2s' % (res.id, res.name, res.typename, len(res.data), res.parent_id)
-
 def dump_arrays(ses):
     print 'Arrays...'
     for arr in arrays(ses):
         print 'id: %-2s  name: %-10s  typename: %-10s  shape: %-10s' % (arr.id, arr.name, arr.typename, arr.data.shape)
+
+def dump_result(ses, res):
+    print 'id: %-2s  name: %-10s  typename: %-10s  data: %-2s  parent: %-2s' % (res.id, res.name, res.typename, len(res.data), res.parent_id)
+
+def dump_results(ses):
+    print 'Results...'
+    for res in results(ses):
+        dump_result(ses,res)
 
 def dump_table(ses):
     """Dump table."""
     dump_results(ses)
     dump_arrays(ses)
 
-def dump(ses, arr_id, results, arrays):
+def dump(ses, res_id=None, arr_id=None, res=None, arrs=None):
     """Dump contents."""
-    if arr_id is not None:
-        dump_array(ses, arr_id)
-    elif results:
+    if res_id:
+        dump_result(ses, results(ses).get(res_id))
+    if arr_id:
+        dump_array(ses, arrays(ses).get(arr_id))
+    if res:
         dump_results(ses)
-    elif arrays:
+    if arrs:
         dump_arrays(ses)
-    else:
+    dumpall = [res_id,arr_id,res,arrs]
+    if not any(dumpall):
         dump_table(ses)
 
 def get_last_ids(ses):
