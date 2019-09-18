@@ -3,13 +3,11 @@
 A Click interface to pixsim.
 '''
 
-
 import click
 import pprint
 
 from pixsim.models import Array, Result
 from pixsim.store import get_result, get_array, dump, IntegrityError
-from sqlalchemy.dialects import postgresql
 
 def save_result(ctx, results):
     """Save result to store."""
@@ -420,7 +418,8 @@ def cmd_average(ctx, start, end, name):
     res = Result(name=name, typename='current', data=wfs)
     save_result(ctx, res)
             
-            
+################################################################
+# Removal
 @cli.group("rm", help="Remove items from the store.")
 @click.pass_context
 def cmd_rm(ctx):
@@ -429,10 +428,16 @@ def cmd_rm(ctx):
 def do_removal(ses, objid, id_range, flv):
     '''
     Wrapper for removing arrays/results.
+    Note: If deleting results, associated arrays
+    will be deleted as well.
     '''
     from pixsim.store import get_last_ids
     total_ids = get_last_ids(ses)[flv]
     getmth = eval('get_'+str(flv))
+
+    def rm_arrs(ses, arrs):
+        for arr in arrs:
+            ses.delete(arr)
 
     if objid is not None:
         if objid < 0:
@@ -444,6 +449,10 @@ def do_removal(ses, objid, id_range, flv):
         do_it = click.prompt("Remove {} {}? (y/n)".format(flv, objid), default='y')
         if 'y' == do_it:
             click.echo("Removing %s %d %s %s" % (flv,obj.id,obj.name,obj.typename))
+            # if this is a result obj, remove the arrays as well
+            if flv == 'result':
+                rm_arrs(ses, obj.data)
+
             ses.delete(obj)
             update_ses(ses)
         else:
@@ -476,6 +485,9 @@ def do_removal(ses, objid, id_range, flv):
             obj = getmth(ses, None, currid)
             while obj is not None and obj.id <= last_id:
                 click.echo("Removing %s %d %s %s" % (flv,obj.id,obj.name,obj.typename))
+                # if this is a result obj, remove the arrays as well
+                if flv == 'result':
+                    rm_arrs(ses, obj.data)
                 ses.delete(obj)
                 currid += 1
                 obj = getmth(ses, None, currid)
@@ -497,7 +509,7 @@ def do_removal(ses, objid, id_range, flv):
         -r 2:6 deletes ids ranging from 2 to and including 6.\n\
         -r 2: or 2:-1 deletes ids ranging from 2 to the end.")
 @click.pass_context
-def cmd_array(ctx, array_id, id_range):
+def cmd_rm_array(ctx, array_id, id_range):
     '''
     Remove arrays from the store. Tread lightly!
     '''
@@ -516,13 +528,15 @@ def cmd_array(ctx, array_id, id_range):
         -r 2:6 deletes ids ranging from 2 to and including 6.\n\
         -r 2: or 2:-1 deletes ids ranging from 2 to the end.")
 @click.pass_context
-def cmd_array(ctx, result_id, id_range):
+def cmd_rm_result(ctx, result_id, id_range):
     '''
     Remove results from the store. Tread lightly!
     '''
     ses = ctx.obj['session']
     do_removal(ses, result_id, id_range, 'result')
 
+################################################################
+# Rename
 @cli.command("rename")
 @click.option("-r","--result_id", type=int, default=None, help="Result ID to rename")
 @click.option("-a","--array_id", type=int, default=None, help="Array ID to rename")
@@ -552,6 +566,8 @@ def cmd_rename(ctx, result_id, array_id, name):
         ses.add(array)
         ses.commit()
 
+################################################################
+# Export
 @cli.command("export")
 @click.option("-s","--save", type=str, required=True, help="Type of result to save.")
 @click.option("-r","--result_id", type=int, required=True, help="Result ID to save.")
@@ -565,26 +581,47 @@ def cmd_export(ctx, save, result_id, output):
     import pixsim.export as export
     export.export(ses, ctx.obj['mesh_filename'], save, output, result_id)
       
-@cli.command("update")
+################################################################
+# Dump
+@cli.group("dump", help="Dump items from the store.")
 @click.pass_context
-def cmd_update(ctx):
-    '''
-    Update database.
-    '''
-    ses = ctx.obj['session']
-    update(ses)
+def cmd_dump(ctx):
+    return
 
-@cli.command("dump")
-@click.option("-i","--array_id", type=int, default=None, help="Dump array content")
-@click.option("-r","--results", is_flag=True, help="Dump results.")
-@click.option("-a","--arrays", is_flag=True, help="Dump arrays.")
+@cmd_dump.command("all")
 @click.pass_context
-def cmd_dump(ctx, array_id, results, arrays):
+def cmd_dump_all(ctx):
     '''
-    Dump database.
+    Dump all contents from store.
     '''
     ses = ctx.obj['session']
-    dump(ses, array_id, results, arrays)
+    dump(ses)
+
+@cmd_dump.command("results")
+@click.option("-i","--result_id", type=int, default=None, help="Dump result content")
+@click.pass_context
+def cmd_dump_results(ctx, result_id):
+    '''
+    Dump results from store.
+    '''
+    ses = ctx.obj['session']
+    if result_id:
+        dump(ses, res_id=result_id)
+    else:
+        dump(ses, res=True)
+
+@cmd_dump.command("arrays")
+@click.option("-i","--array_id", type=int, default=None, help="Dump array content")
+@click.pass_context
+def cmd_dump_arrays(ctx, array_id):
+    '''
+    Dump arrays from store.
+    '''
+    ses = ctx.obj['session']
+    if array_id:
+        dump(ses, arr_id=array_id)
+    else:
+        dump(ses, arrs=True)
 
 def main():
     cli(obj=dict())
