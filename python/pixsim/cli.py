@@ -50,6 +50,12 @@ def find_data(res, names):
     else:
         return ret
 
+def update_ses(ses):
+    ses.flush()
+    ses.commit()
+    ses.execute("VACUUM") 
+    ses.commit()
+
 @click.group()
 @click.option('-c', '--config',  default=None, help = 'Path to configuration file.')
 @click.option('-s', '--store',   default=None, help = 'Set data store file.')
@@ -120,11 +126,10 @@ def cmd_gengeo(ctx, config, output):
     geo = tocall(output)
     geo.construct_geometry(pixcoll, **ctx.obj['cfg'][config])
 
-@cli.command("domain_map")
+@cli.command("genmap")
 @click.option('-c','--config', default='geometry',  type=str, help='Section name in config.')
-@click.option('-o','--output', default='domainmap.txt', type=str, help='The name of the output text file.')
 @click.pass_context
-def cmd_gengeo(ctx, config, output):
+def cmd_genmap(ctx, config):
     '''
     Generate domain/pixel map from msh file
     '''
@@ -135,13 +140,19 @@ def cmd_gengeo(ctx, config, output):
         domains[n] = v[0]
     import pixsim.geometry as geometry
     pixcoll = geometry.make_pixels(**ctx.obj['cfg'][config])
-    with open(output, 'w') as f:
-        for pix in pixcoll:
-            name,hdim,center,shape = pix.info()
-            dom = domains[name]
-            out = [dom, name, center[0], center[1], center[2]]
-            out = str(out).strip('[]').replace(',',' ').replace('\'','')
-            f.write(out+'\n')
+
+    import numpy as np
+    arrs = list()
+    for pix in pixcoll:
+        name,hdim,center,shape = pix.info()
+        dom = domains[name]
+        pid = int(name[5:]) # assuming name = pixel#
+        arrs.append( [dom, pid, center] )
+
+    from pixsim.models import Array
+    arr = [ Array(name='domain_map', typename='tuples', data=np.asarray(arrs)) ]
+    res = Result(name='domain_map', typename='geometry', data=arr)
+    save_result(ctx, res)
 
 @cli.command("boundary")
 @click.option('-c','--config', default='boundary', help='Section name in config.')
@@ -410,49 +421,80 @@ def cmd_average(ctx, start, end, name):
     save_result(ctx, res)
             
             
-
-@cli.command("delete")
-@click.option("-a","--array_id", type=int, default=None, help="Array id to delete")
-@click.option("-r","--result_id", type=int, default=None, help="Result id to delete")
-@click.option("-s","--start_id", type=int, default=None, help="Start id to delete")
-@click.option("-e","--end_id", type=int, default=None, help="End id to delete")
+@cli.group("rm", help="Remove items from the store.")
 @click.pass_context
-def cmd_delete(ctx, array_id, result_id, start_id, end_id):
+def cmd_rm(ctx):
+    return
+
+@cmd_rm.command('array')
+@click.option("-i","--array_id", type=int, default=None, 
+    help="Array id to delete. \n\
+        Ex. \n\
+        -i 5 deletes id 5. \n\
+        -i -2 deletes second to last id.")
+@click.option("-r","--id_range", type=str, default=None, 
+    help="Range of ids to delete. \n\
+        Ex. \n\
+        -r 2:6 deletes ids ranging from 2 to and including 6.\n\
+        -r 2: or 2:-1 deletes ids ranging from 2 to the end.")
+@click.pass_context
+def cmd_array(ctx, array_id, id_range):
     '''
-    Remove items from the store.
+    Remove arrays from the store. Tread lightly!
     '''
     ses = ctx.obj['session']
+    from pixsim.store import get_last_ids
+
     if array_id is not None:
+        if array_id < 0:
+            array_id = total_ids - abs(array_id) + 1
         array = get_array(ses, None, array_id)
         if array is None:
-            click.echo("No matching array for array_id = {}".format(array_id))
+            click.echo("No matching array for id = {}".format(array_id))
             return
-        click.echo("remove array %d %s %s" % (array.id,array.name,array.typename))
-        ses.delete(array)
-    elif result_id is not None:
-        result = get_result(ses, None, result_id)
-        if result is None:
-            click.echo("No matching result for result_id = {}".format(result_id))
+        do_it = click.prompt("Remove array {}? (y/n)".format(array_id), default='y')
+        if 'y' == do_it:
+            click.echo("Removing array %d %s %s" % (array.id,array.name,array.typename))
+            ses.delete(array)
+            update_ses(ses)
+        else:
+            click.echo("Not removing array")
+        return
+
+    if id_range is not None:
+        if ':' not in id_range:
+            click.echo('Error. Do not understand range {}'.format(id_range))
             return
-        click.echo("remove result %d %s %s" % (result.id,result.name,result.typename))
-        for arr in result.data:
-            ses.delete(arr)
-        ses.delete(result)
-    elif start_id is not None:
-        currid = start_id
-        result = get_result(ses, None, currid)
-        while result is not None and result.id <= end_id:
-            print 'Deleting resid',currid
-            for arr in result.data:
-                ses.delete(arr)
-            ses.delete(result)
-            currid += 1
-            result = get_result(ses, None, currid)
-    ses.flush()
-    ses.commit()
-    ses.execute("VACUUM") 
-    ses.commit()
-    
+        se = id_range.split(':')
+        se = [ int(s) for s in se if len(s)>0 ]
+        we_got = len(se)
+        if we_got != 2 and we_got != 1:
+            click.echo('Error. Do not understand range {}'.format(id_range))
+            return
+
+        first_id = se[0]
+        last_id = total_ids
+        if we_got == 2:
+            last_id = se[-1]
+            if last_id < 0:
+                last_id = total_ids - abs(last_id) + 1
+        if first_id > last_id:
+            last_id = first_id
+
+        do_it = click.prompt("Remove arrays {} through {}? (y/n)".format(first_id, last_id), default='y')
+        if 'y' == do_it:
+            currid = first_id
+            array = get_result(ses, None, currid)
+            while array is not None and array.id <= last_id:
+                click.echo("removing array %d %s %s" % (array.id,array.name,array.typename))
+                ses.delete(array)
+                currid += 1
+                array = get_result(ses, None, currid)
+            update_ses(ses)
+            return
+        else:
+            click.echo("Not removing arrays")
+            return
 
 @cli.command("rename")
 @click.option("-r","--result_id", type=int, default=None, help="Result ID to rename")
