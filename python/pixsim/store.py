@@ -80,6 +80,10 @@ def dump(ses, arr_id, results, arrays):
     else:
         dump_table(ses)
 
+def get_last_ids(ses):
+    return {'array':arrays(ses).order_by(desc(pixsim.models.Array.id)).first().id,
+            'result':results(ses).order_by(desc(pixsim.models.Result.id)).first().id }
+
 def get_result(ses, name=None, id=None):
     """Return result matching type or id."""
     if id is not None:
