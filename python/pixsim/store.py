@@ -79,7 +79,7 @@ def dump(ses, arr_id, results, arrays):
         dump_arrays(ses)
     else:
         dump_table(ses)
-    
+
 def get_result(ses, name=None, id=None):
     """Return result matching type or id."""
     if id is not None:

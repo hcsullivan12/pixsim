@@ -11,6 +11,8 @@ def convert(sec):
             newsec[k] = np.asarray(eval(v))
         elif '\'' in v or '\"' in v:
             newsec[k]=str(v[1:-1])
+        elif '/' in v:
+            newsec[k]=v
         else:
             newsec[k]=eval(v)
     return newsec

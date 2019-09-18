@@ -353,8 +353,10 @@ def cmd_step(ctx, step, raster, config, name):
 @cli.command("delete")
 @click.option("-a","--array_id", type=int, default=None, help="Array id to delete")
 @click.option("-r","--result_id", type=int, default=None, help="Result id to delete")
+@click.option("-s","--start_id", type=int, default=None, help="Start id to delete")
+@click.option("-e","--end_id", type=int, default=None, help="End id to delete")
 @click.pass_context
-def cmd_delete(ctx, array_id, result_id):
+def cmd_delete(ctx, array_id, result_id, start_id, end_id):
     '''
     Remove items from the store.
     '''
@@ -366,10 +368,6 @@ def cmd_delete(ctx, array_id, result_id):
             return
         click.echo("remove array %d %s %s" % (array.id,array.name,array.typename))
         ses.delete(array)
-        ses.flush()
-        ses.commit()
-        ses.execute("VACUUM") 
-        ses.commit()
     elif result_id is not None:
         result = get_result(ses, None, result_id)
         if result is None:
@@ -379,10 +377,21 @@ def cmd_delete(ctx, array_id, result_id):
         for arr in result.data:
             ses.delete(arr)
         ses.delete(result)
-        ses.flush()
-        ses.commit()
-        ses.execute("VACUUM") 
-        ses.commit()
+    elif start_id is not None:
+        currid = start_id
+        result = get_result(ses, None, currid)
+        while result is not None and result.id != end_id:
+            print 'Deleting resid',currid
+            for arr in result.data:
+                ses.delete(arr)
+            ses.delete(result)
+            currid += 1
+            result = get_result(ses, None, currid)
+    ses.flush()
+    ses.commit()
+    ses.execute("VACUUM") 
+    ses.commit()
+    
 
 @cli.command("rename")
 @click.option("-r","--result_id", type=int, default=None, help="Result ID to rename")
@@ -415,15 +424,16 @@ def cmd_rename(ctx, result_id, array_id, name):
 
 @cli.command("export")
 @click.option("-s","--save", type=str, required=True, help="Type of result to save.")
+@click.option("-r","--result_id", type=int, required=True, help="Result ID to save.")
 @click.option("-o","--output", type=str, required=True, help="Name of output file(s).")
 @click.pass_context
-def cmd_export(ctx, save, output):
+def cmd_export(ctx, save, result_id, output):
     '''
     Since this can get more and more involved, it will be easier to prompt user.
     '''
     ses = ctx.obj['session']
     import pixsim.export as export
-    export.export(ses, ctx.obj['mesh_filename'], save, output)
+    export.export(ses, ctx.obj['mesh_filename'], save, output, result_id)
       
 @cli.command("update")
 @click.pass_context
