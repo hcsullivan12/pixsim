@@ -160,7 +160,7 @@ def cmd_boundary(ctx, config, name):
 @cli.command("plot")
 @click.option("-r","--result_id", default=None, type=int, help="Result ID of results to use.")
 @click.option('-c','--config', default='plotting', help='Section name in config.')
-@click.option('-q','--quantity', default='potential', type=str, help='Quantity to plot (potential/efield/waveforms).')
+@click.option('-q','--quantity', default=None, type=str, help='Quantity to plot (potential/efield/waveforms).')
 @click.pass_context
 def cmd_plot(ctx, result_id, config, quantity):
     '''
@@ -192,6 +192,32 @@ def cmd_plot(ctx, result_id, config, quantity):
         return
     else:
         click.echo("Cannot plot quantity {}".format(quantity))
+
+
+@cli.command("play")
+@click.option("-s","--start", required=True, type=int, help="First waveform result id.")
+@click.option("-e","--end", required=True, type=int, help="Last waveform result id.")
+@click.option('-c','--config', default='plotting', help='Section name in config.')
+@click.pass_context
+def cmd_play(ctx, start, end, config):
+    '''
+    Plotting results.
+    '''
+
+    ses = ctx.obj['session']
+    currid = start
+    result = get_result(ses, None, currid)
+    waveforms = list()
+    while result is not None and result.id <= end:
+        for arr in result.data:
+            waveforms.append(arr.data)
+        currid += 1
+        result = get_result(ses, None, currid)
+    
+    import pixsim.plotting as plt
+    plt.plot_waveforms(waveforms, **ctx.obj['cfg'][config])
+    return
+
 
 @cli.command("raster")
 @click.option("-s","--source", default='solution', type=str, help="Name of results to source.")
@@ -350,6 +376,41 @@ def cmd_step(ctx, step, raster, config, name):
     res = Result(name=name, typename='current', data=arrays, parent=rasres)
     save_result(ctx, res)
 
+@cli.command("average")
+@click.option("-s","--start", required=True, type=int, help="First waveform result id.")
+@click.option("-e","--end", required=True, type=int, help="Last waveform result id.")
+@click.option('-n','--name', default='averaged_waveforms', type=str, help='Name of result.')
+@click.pass_context
+def cmd_average(ctx, start, end, name):
+    '''
+    Average waveforms across path results. This assumes paths were identical.
+    '''
+    ses = ctx.obj['session']
+    currid = start
+    result = get_result(ses, None, currid)
+    avgwvf = [w.data for w in result.data]
+    names  = [w.name for w in result.data]
+    
+    currid += 1
+    result = get_result(ses, None, currid)
+    while result is not None and result.id <= end:
+        click.echo('Adding waveform from result {}'.format(currid))
+        for path,wvf in enumerate(result.data):
+            for tick in range(0,len(avgwvf[path])):
+                avgwvf[path][tick][1] += wvf.data[tick][1]
+            avgwvf[path][:][1] /= len(avgwvf[path])
+        currid += 1
+        result = get_result(ses, None, currid)
+    
+    wfs = list()
+    for wf,nm in zip(avgwvf,names):
+        thisname = 'avg_waveform_for_'+nm
+        wfs.append(Array(name=thisname, typename='tuples', data=wf))
+    res = Result(name=name, typename='current', data=wfs)
+    save_result(ctx, res)
+            
+            
+
 @cli.command("delete")
 @click.option("-a","--array_id", type=int, default=None, help="Array id to delete")
 @click.option("-r","--result_id", type=int, default=None, help="Result id to delete")
@@ -380,7 +441,7 @@ def cmd_delete(ctx, array_id, result_id, start_id, end_id):
     elif start_id is not None:
         currid = start_id
         result = get_result(ses, None, currid)
-        while result is not None and result.id != end_id:
+        while result is not None and result.id <= end_id:
             print 'Deleting resid',currid
             for arr in result.data:
                 ses.delete(arr)

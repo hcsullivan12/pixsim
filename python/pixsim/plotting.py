@@ -105,8 +105,8 @@ def plot_potential(mshfile, bins, points, pot, height=0.2, draw_potential=1, dra
     plt.show()
     
 def plot_waveforms(waveforms, **kwds):
-    waveforms = np.asarray(waveforms)
-    wvfs = waveforms[0:-1:2]
+    wvfs = np.asarray(waveforms)
+    #wvfs = wvfs[0:-1:2]
 
     import matplotlib.pyplot as plt    
     for w in wvfs:
