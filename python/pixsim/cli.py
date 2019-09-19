@@ -366,7 +366,7 @@ def cmd_gen_export(ctx, save, output, range_id):
 @click.pass_context
 def cmd_gen_current(ctx, config, output):
     '''
-    Generate current
+    Generate current. Finish this...
     '''
     return
 
