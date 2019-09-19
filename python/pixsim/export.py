@@ -9,7 +9,7 @@ def save_boundary_vtk(ses, mshfile, outname, res_id):
     '''
     print 'Saving boundary results...'
     #res_id = input('Enter the boundary result ID: ')
-    result = get_result(ses, None, res_id)
+    result = get_result(ses, id=res_id)
     if result is None:
         print 'No matching results for ID = {}'.format(res_id)
         return
@@ -34,7 +34,7 @@ def save_raster_vtk(ses, outname, res_id):
     '''
     print 'Saving raster results...'
     #res_id = input('Enter the raster result ID: ')
-    result = get_result(ses, None, res_id)
+    result = get_result(ses, id=res_id)
     if result is None:
         print 'No matching results for ID = {}'.format(res_id)
         return
@@ -75,17 +75,17 @@ def save_step_vtk(ses, outname, res_id):
     '''
     print 'Saving stepping results...'
     #res_id = input('Enter the step result ID: ')
-    step_res = get_result(ses, None, res_id)
+    step_res = get_result(ses, id=res_id)
     if step_res is None:
         print 'No matching results for ID = {}'.format(res_id)
         return
 
     # we need the raster data
-    vel_res = get_result(ses, None, step_res.parent_id)
+    vel_res = get_result(ses, id=step_res.parent_id)
     if vel_res is None:
         print 'No matching results for ID = {}'.format(step_res.parent_id)
         return
-    rast_res = get_result(ses, None, vel_res.parent_id)
+    rast_res = get_result(ses, id=vel_res.parent_id)
     if rast_res is None:
         print 'No matching results for ID = {}'.format(vel_res.parent_id)
         return
@@ -101,7 +101,7 @@ def save_step_vtk(ses, outname, res_id):
     field = Scalar(field, linspaces)
 
     # exporting initial position
-    vtxs = [x for x in step_res.data if 'vtx' in x.name]
+    vtxs = [x for x in step_res.data if 'points' in x.typename]
     points = list()
     pot    = list()
     for vtx in vtxs:
@@ -130,7 +130,7 @@ def save_step_vtk(ses, outname, res_id):
         write_data(ug, fname)
 
     # exporting paths
-    paths = [x for x in step_res.data if 'path' in x.name]
+    paths = [x for x in step_res.data if 'tuples' in x.typename]
     points = list()
     pot    = list()
     vel    = list()

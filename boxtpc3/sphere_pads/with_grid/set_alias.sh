@@ -1,1 +1,1 @@
-alias pix='pixsim -c boxtpc.cfg -s boxtpc.db -m tpcgeometry.msh'
+alias pix='pixsim -c boxtpc.cfg -s testing.db -m tpcgeometry.msh'
