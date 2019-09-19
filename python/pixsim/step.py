@@ -407,7 +407,7 @@ def get_vertices(step_range, step_inc, stepfile):
         except:
             print 'Stepfile',stepfile,'does not exist!'
 
-        # expecting list of x y z 
+        # expecting list of name x y z 
         while True:
             linevec = f.readline().split()
             if len(linevec)<1:
