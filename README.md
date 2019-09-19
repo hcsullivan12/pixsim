@@ -14,6 +14,9 @@ What this package can do:
 
 This package is a command-line tool that has seperate commands for each stage of the simulation. Data from each result is persisted in a database that gets updated at the end of each stage and can be referenced by name or ID in subsequent stages. 
 
+![alt text](https://raw.githubusercontent.com/hcsullivan12/picture_store/master/steps2.png "Steps")
+
+
 # Geometry
 Currently, *pixsim* uses the [pygmsh](https://pypi.org/project/pygmsh/) api to generate geometries and the corresponding *.geo* files. The readout electrodes are defined at a high level (e.g. position, shape) and are used in constructing the TPC geometry. In principle, any geometry with arbitrary complexity can be constructed, and the [pygmsh](https://pypi.org/project/pygmsh/) api provides a relatively simple way of building these geometries. While [larf](https://github.com/brettviren/larf) has dedicated routines for constructing the meshes, this layer has been removed in pixsim. Rather, meshes are constructed from the *.geo* files using [GMSH](http://gmsh.info/). The high level information for the readout electrodes (pixels) is saved and the *.msh* file can be passed at runtime for subsequent algorithms. 
 
@@ -193,3 +196,4 @@ Export a range of results
 ```
 $ pix gen export -s <result_type> -o <name_prefix> -r <first_result_id>:<last_result_id>
 ```
+![alt text](https://raw.githubusercontent.com/hcsullivan12/picture_store/master/steps1.png "Steps")
