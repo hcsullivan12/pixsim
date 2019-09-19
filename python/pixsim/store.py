@@ -90,14 +90,29 @@ def get_last_ids(ses):
     return {'array':arrays(ses).order_by(desc(pixsim.models.Array.id)).first().id,
             'result':results(ses).order_by(desc(pixsim.models.Result.id)).first().id }
 
-def get_result(ses, name=None, id=None):
+def interpret(s):
+    """Interpret string as int or string"""
+    id,name = None, None
+    try:
+        int(s)
+        id=s
+    except ValueError:
+        name=s
+    return id,name
+
+def get_result(ses, source=None, name=None, id=None):
     """Return result matching type or id."""
-    if id is not None:
-        if id < 0:
-            return results(ses).order_by(desc(pixsim.models.Result.id)).first()
+    checkid = id
+    checkname = name
+    if source is not None:
+        checkid,checkname = interpret(source)
+    
+    if checkid is not None:
+        if checkid < 0:
+            return results(ses).order_by(desc(pixsim.models.Result.checkid)).first()
         else:
-            return results(ses).get(id)
-    elif name is not None:
-        return results(ses).filter_by(name=name).order_by(desc(pixsim.models.Result.created)).first()
+            return results(ses).get(checkid)
+    elif checkname is not None:
+        return results(ses).filter_by(name=checkname).order_by(desc(pixsim.models.Result.created)).first()
     else:
         return None

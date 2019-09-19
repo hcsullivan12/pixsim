@@ -223,19 +223,20 @@ def cmd_gen_weight(ctx, config, name, dmap, exrad):
 @cmd_gen.command("raster")
 @click.option('-c','--config', default='weight_raster', type=str, help='Section name in config file.')
 @click.option('-n','--name', default='weight_raster_resid_', type=str, help='Prefix for result names.')
-@click.option("-r","--id_range", type=str, required=True,
-    help="Range of result ids to source. \n\
+@click.option("-b","--boundary", type=str, required=True,
+    help="Range of boundary result ids. \n\
         Ex. \n\
         -r 2:6 sources ids ranging from 2 to and including 6.\n\
         -r 2: or 2:-1 sources ids ranging from 2 to the end.")
 @click.pass_context
-def cmd_gen_raster(ctx, config, name, id_range):
+def cmd_gen_raster(ctx, config, name, boundary):
     '''
     Generate raster. Used to generate the rasters for
     for a collection of weighting solutions. This is meant
     to run after a gen weight, so results can be passed 
-    using id range. 
+    using boundary option. 
     '''
+    id_range = boundary
     ses = ctx.obj['session']
     from pixsim.store import get_last_ids
     total_ids = get_last_ids(ses)['result']
@@ -249,7 +250,7 @@ def cmd_gen_raster(ctx, config, name, id_range):
         return
     for src in sources:
         click.echo('Running for {}'.format(str(src)))
-        ctx.invoke(cmd_raster, config=config, result_id=src, name=name+str(src))
+        ctx.invoke(cmd_raster, config=config, boundary=src, name=name+str(src))
 
 @cmd_gen.command("vtx")
 @click.option("-s","--source", default='step_template.txt', type=str, help="Name of template file.")
@@ -306,13 +307,12 @@ def cmd_gen_vtx(ctx, source, geoconfig, name, dirname):
 
 @cmd_gen.command("step")
 @click.option('-d','--dirname', default='gen_step_vtx', type=str, help='Path to directory containing vtx files.')
-@click.option("-s","--source", default='velocity', type=str, help="Name of results to source.")
+@click.option("-v","--velocity", default='velocity', type=str, help="Velocity results (name or ID).")
 @click.option("-g","--geoconfig", default='geometry', type=str, help="Section name of geometry in config.")
 @click.option("-c","--config", default='step', type=str, help="Section name in config.")
 @click.option('-n','--name', default='paths_for_', type=str, help='Name of result.')
-@click.option("-r","--id_range", type=str, required=True)
 @click.pass_context
-def cmd_gen_step(ctx, dirname, source, geoconfig, config, name):
+def cmd_gen_step(ctx, dirname, velocity, geoconfig, config, name):
     '''
     Generate step. Will run stepping algorithm 
     '''
@@ -330,26 +330,35 @@ def cmd_gen_step(ctx, dirname, source, geoconfig, config, name):
 
         click.echo('Running step for filepath {}'.format(filepath))
         add_params(ctx, par)
-        ctx.invoke(cmd_step, source=source, geoconfig=geoconfig, config=config, name=name+str(pidname[0]))
+        ctx.invoke(cmd_step, velocity=velocity, geoconfig=geoconfig, config=config, name=name+str(pidname[0]))
 
 @cmd_gen.command("export")
-@click.option('-c','--config', default='geometry',  type=str, help='Section name in config.')
-@click.option('-o','--output', default='mygeo.geo', type=str, help='The name of the geo file to generate.')
+@click.option('-s','--save', required=True, type=str, help='Type of result to export.')
+@click.option('-o','--output', required=True, type=str, help='Prefix of name for exported files.')
+@click.option("-r","--range_id", type=str, required=True,
+    help="Range of result ids. \n\
+        Ex. \n\
+        -r 2:6 sources ids ranging from 2 to and including 6.\n\
+        -r 2: or 2:-1 sources ids ranging from 2 to the end.")
 @click.pass_context
-def cmd_gen_export(ctx, config, output):
+def cmd_gen_export(ctx, save, output, range_id):
     '''
     Generate exports.
     '''
-    ids = [x for x in range(43,59)]
+    ses = ctx.obj['session']
+    from pixsim.store import get_last_ids
+    total_ids = get_last_ids(ses)['result']
 
-    pix = 'pixsim -c boxtpc.cfg -s boxtpc.db -m tpcgeometry.msh '
-    for path in ids:
-        com = 'export -s step -r '+str(path)+' -o path_resid_'+str(path)
-
-        print '\nRunning for',str(path)
-        dothis = pix+com
-        print dothis
-        check_call(dothis, shell=True)
+    first_id, last_id, we_got = pythonify(id_range, total_ids)
+    if we_got is None:
+        return
+    sources = [x for x in range(first_id,last_id+1)]
+    do_it = click.prompt("Do range {}-{}? (y/n)".format(first_id, last_id), default='y')
+    if 'y' != do_it:
+        return
+    for src in sources:
+        click.echo('Running for {}'.format(str(src)))
+        ctx.invoke(cmd_export, save=save, result_id=src, output=output+str(src))
 
 @cmd_gen.command("current")
 @click.option('-c','--config', default='geometry',  type=str, help='Section name in config.')
@@ -454,10 +463,9 @@ def cmd_raster(ctx, boundary, config, name):
     '''
     ses = ctx.obj['session']
     bres = None
-    if is_integer(boundary):
-        bres = get_result(ses, boundary)
+    bres = get_result(ses, source=boundary)
     if bres is None:
-        click.echo("No matching results for name or id = {} {}".format(source, boundary_id))
+        click.echo("No matching results for {}".format(boundary))
         return
 
     sol = find_data(bres, ['scalar'])
@@ -470,20 +478,18 @@ def cmd_raster(ctx, boundary, config, name):
 ################################################################
 # Velocity
 @cli.command("velocity")
-@click.option("-s","--source", default='raster', type=str, help="Name of results to source.")
-@click.option("-r","--result_id", default=None, type=int, help="ID of results to use.")
+@click.option("-r","--raster", default='raster', type=str, help="Raster results (name or ID).")
 @click.option("-c","--config", default='velocity', type=str, help="Section name in config.")
 @click.option('-n','--name', default='velocity', type=str, help='Name of result.')
 @click.pass_context
-def cmd_velocity(ctx, source, result_id, config, name):
+def cmd_velocity(ctx, raster, config, name):
     '''
     Evaluating velocity on raster.
     '''
-
     ses = ctx.obj['session']
-    rasres = get_result(ses, name=source, id=result_id)
+    rasres = get_result(ses, source=raster)
     if rasres is None:
-        click.echo("No matching results for name or id = {} {}".format(source, result_id))
+        click.echo("No matching results for {}".format(raster))
         return
 
     potential, linspace = find_data(rasres, ['scalar', 'linspace'])
@@ -497,22 +503,22 @@ def cmd_velocity(ctx, source, result_id, config, name):
 ################################################################
 # Step
 @cli.command("step")
-@click.option("-s","--source", default='velocity', type=str, help="Name of results to source.")
+@click.option("-v","--velocity", default='velocity', type=str, help="Velocity results (name or ID)")
 @click.option("-g","--geoconfig", default='geometry', type=str, help="Section name of geometry in config.")
-@click.option("-r","--result_id", default=None, type=int, help="ID of results to use.")
 @click.option("-c","--config", default='step', type=str, help="Section name in config.")
 @click.option('-n','--name', default='paths', type=str, help='Name of result.')
 @click.pass_context
-def cmd_step(ctx, source, geoconfig, result_id, config, name):
+def cmd_step(ctx, velocity, geoconfig, config, name):
     '''
-    Step through velocity field.
+    Step through velocity field. Also retrieves the linspace
+    from parent raster results.
     '''
     ses = ctx.obj['session']
-    vres = get_result(ses, name=source, id=result_id)
+    vres = get_result(ses, source=velocity)
     if vres is None:
-        click.echo("No matching results for name or id = {} {}".format(source, result_id))
+        click.echo("No matching results for ".format(velocity))
         return
-    rasres  = get_result(ses, None, vres.parent_id)
+    rasres  = get_result(ses, id=vres.parent_id)
     if rasres is None:
         click.echo("No matching results for parent ID = {}".format(vres.parent_id))
         return
@@ -533,21 +539,21 @@ def cmd_step(ctx, source, geoconfig, result_id, config, name):
 ################################################################
 # Step
 @cli.command("current")
-@click.option("-s","--step", default='paths', type=str, help="Name of step results.")
+@click.option("-s","--step", default='paths', type=str, help="Step results (name or ID).")
 @click.option("-r","--raster", default='weightraster', type=str, help="Name of raster results.")
 @click.option("-c","--config", default='current', type=str, help="Section name in config.")
 @click.option('-n','--name', default='waveforms', type=str, help='Name of result.')
 @click.pass_context
 def cmd_current(ctx, step, raster, config, name):
     '''
-    Calculate the current on pixels.
+    Calculate the current on pixels from step and raster result.
     '''
     ses = ctx.obj['session']
-    sres = get_result(ses, name=step, id=None)
+    sres = get_result(ses, source=step)
     if sres is None:
         click.echo("No matching results for name = {}".format(step))
         return
-    rasres = get_result(ses, name=raster, id=None)
+    rasres = get_result(ses, source=raster)
     if rasres is None:
         click.echo("No matching results for name = {}".format(raster))
         return
@@ -601,6 +607,9 @@ def cmd_average(ctx, start, end, name):
 @cli.group("rm", help="Remove items from the store.")
 @click.pass_context
 def cmd_rm(ctx):
+    '''
+    Entry point into removing items from store.
+    '''
     return
 
 def do_removal(ses, objid, id_range, flv):
