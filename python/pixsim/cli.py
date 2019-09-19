@@ -193,7 +193,7 @@ def cmd_gen_dmap(ctx, config):
 """
 @cmd_gen.command("weight")
 @click.option('-c','--config', default='weight', type=str, help='Section name in config file.')
-@click.option('-n','--name', default='weight_', type=str, help='Prefix for result names.')
+@click.option('-n','--name', default='weight_domain_', type=str, help='Prefix for result names.')
 @click.option('-d','--dmap', default='domain_map',  type=str, help='Name of domain map result.')
 @click.option('-r','--exrad', default=0.7, type=float, help='Exclusion radius.')
 @click.pass_context
@@ -253,18 +253,21 @@ def cmd_gen_raster(ctx, config, name, boundary):
         ctx.invoke(cmd_raster, config=config, boundary=src, name=name+str(src))
 
 @cmd_gen.command("vtx")
-@click.option("-s","--source", default='step_template.txt', type=str, help="Name of template file.")
+@click.option("-s","--source", required=True, type=str, help="Name of template file.")
 @click.option("-g","--geoconfig", default='geometry', type=str, help="Section name of geometry in config.")
 @click.option('-n','--name', default='genvtx', type=str, help='Name of result.')
 @click.option('-d','--dirname', default='gen_step_vtx', type=str, help='Name of created directory.')
 @click.pass_context
 def cmd_gen_vtx(ctx, source, geoconfig, name, dirname):
     '''
-    Generate step vertices for pixel array. 
-    This will create new step vertices in global coordinates based on 
-    electrode IDs and relative starting positions in template step file.
+    Generate step vertices for pixel array.
+    This will create new step vertices in global coordinates based on
+    electrode IDs and relative starting positions in the template step file.
     Will create a directory of step files to use for stepping in
     the corresponding weighting field. 
+    Template file should have something similar to:\n
+    pixels 8 9 10 11 \n
+    0.75 0 0
     '''
     import pixsim.geometry as geometry
     pixcoll = geometry.make_pixels(**ctx.obj['cfg'][geoconfig])
@@ -302,7 +305,8 @@ def cmd_gen_vtx(ctx, source, geoconfig, name, dirname):
             assert(cent is not None)
             gpos = [rpos[i]+cent[i] for i in range(0,3)]
             with open(path, 'w') as f:
-                out = callit+str(gpos[0])+str(gpos[1])+str(gpos[2])
+                out = [callit,str(gpos[0]),str(gpos[1]),str(gpos[2])]
+                out = ' '.join(out)
                 f.write(out+'\n')
 
 @cmd_gen.command("step")
@@ -314,7 +318,7 @@ def cmd_gen_vtx(ctx, source, geoconfig, name, dirname):
 @click.pass_context
 def cmd_gen_step(ctx, dirname, velocity, geoconfig, config, name):
     '''
-    Generate step. Will run stepping algorithm 
+    Generate steps. 
     '''
     import os
     cwd = os.getcwd()
@@ -349,7 +353,7 @@ def cmd_gen_export(ctx, save, output, range_id):
     from pixsim.store import get_last_ids
     total_ids = get_last_ids(ses)['result']
 
-    first_id, last_id, we_got = pythonify(id_range, total_ids)
+    first_id, last_id, we_got = pythonify(range_id, total_ids)
     if we_got is None:
         return
     sources = [x for x in range(first_id,last_id+1)]
@@ -540,13 +544,13 @@ def cmd_step(ctx, velocity, geoconfig, config, name):
 # Step
 @cli.command("current")
 @click.option("-s","--step", default='paths', type=str, help="Step results (name or ID).")
-@click.option("-r","--raster", default='weightraster', type=str, help="Name of raster results.")
+@click.option("-r","--raster", default='weightraster', type=str, help="Raster results (name or ID).")
 @click.option("-c","--config", default='current', type=str, help="Section name in config.")
 @click.option('-n','--name', default='waveforms', type=str, help='Name of result.')
 @click.pass_context
 def cmd_current(ctx, step, raster, config, name):
     '''
-    Calculate the current on pixels from step and raster result.
+    Calculate the current waveforms.
     '''
     ses = ctx.obj['session']
     sres = get_result(ses, source=step)
@@ -557,9 +561,10 @@ def cmd_current(ctx, step, raster, config, name):
     if rasres is None:
         click.echo("No matching results for name = {}".format(raster))
         return
+    assert(sres.typename == 'step' and rasres.typename == 'raster')
 
     efield, linspaces = find_data(rasres, ['vector', 'linspace'])
-    paths  = [p.data for p in sres.data if 'path' in p.name]
+    paths  = [p.data for p in sres.data if 'tuples' in p.typename]
     pnames = [p.name for p in sres.data]
 
     import pixsim.current as current
@@ -629,7 +634,7 @@ def do_removal(ses, objid, id_range, flv):
     if objid is not None:
         if objid < 0:
             objid = total_ids - abs(objid) + 1
-        obj = getmth(ses, None, objid)
+        obj = getmth(ses, id=objid)
         if obj is None:
             click.echo("No matching {} for id = {}".format(flv, objid))
             return
@@ -653,7 +658,7 @@ def do_removal(ses, objid, id_range, flv):
         do_it = click.prompt("Remove {}s {} through {}? (y/n)".format(flv, first_id, last_id), default='y')
         if 'y' == do_it:
             currid = first_id
-            obj = getmth(ses, None, currid)
+            obj = getmth(ses, id=currid)
             while obj is not None and obj.id <= last_id:
                 click.echo("Removing %s %d %s %s" % (flv,obj.id,obj.name,obj.typename))
                 # if this is a result obj, remove the arrays as well
@@ -746,7 +751,7 @@ def cmd_rename(ctx, result_id, array_id, name):
 @click.pass_context
 def cmd_export(ctx, save, result_id, output):
     '''
-    Since this can get more and more involved, it will be easier to prompt user.
+    Export results to .vtk format.
     '''
     ses = ctx.obj['session']
     import pixsim.export as export
