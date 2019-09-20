@@ -31,7 +31,7 @@ The configuration file *boxtpc.cfg* defines the parameters to use in the various
 
 To view a complete list of available commands, run 
 ```
-pix --help
+$ pix --help
 ```
 
 ## Geometry
@@ -71,11 +71,11 @@ $ pix raster
 ```
 This will compute the potential and gradient and save other relevent information. An option is provided to pass a specific boundary result ID or name using the `-b` flag. If none is passed, the algorithm will look for the most recent boundary result. As an example,
 ```
-pix raster -b 2
+$ pix raster -b 2
 ```
 or 
 ```
-pix raster -b my_boundary_result_name
+$ pix raster -b my_boundary_result_name
 ```
 
 ## Velocity 
@@ -143,28 +143,28 @@ This should save a waveform for each path from the step result. The waveform is 
 ### Plotting
 One can plot the potential from a raster result by running the command
 ```
-pix plot -r <raster_result_id> -q potential
+$ pix plot -r <raster_result_id> -q potential
 ```
 CAUTION: depending on how fine the parameters are in the configuration section and in the code itself, this could take a while.
 
 ### Exporting 
 To export results to *.vtk* format for viewing with [ParaView](https://www.paraview.org/), run
 ```
-pix export -s <result_type> -o <filename_prefix>
+$ pix export -s <result_type> -o <filename_prefix>
 ```
 
 ### Editing the store
 Rename
 ```
-pix rename --help
+$ pix rename --help
 ```
 Remove
 ```
-pix rm --help
+$ pix rm --help
 ```
 
 # Generation 
-To help automate the stages in the simulation, *pixsim* provides multiple subcommands under the *gen* command for large, but closely related input for the same stage. 
+To help automate the stages in the simulation, *pixsim* provides multiple subcommands under the *gen* command for running identical simulation for closely related input. As an example, one may like to simulate the current reponse for many electrodes, taking an average at the end. This requires simulations for identical relative drift vertices for multiple electrodes using their corresponding weighting field. 
 
 ## Weighting field
 Run the weighting field stage for multiple domains through the command

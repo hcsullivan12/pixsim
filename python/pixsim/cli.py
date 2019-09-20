@@ -134,7 +134,8 @@ def cmd_config(ctx):
         
 ################################################################
 # Gen
-# This series of commands is meant automate the simulation stages.
+# A few of these commands are meant to generate results 
+# for identical simulations for different domains.
 @cli.group("gen", help="Generate items.")
 @click.pass_context
 def cmd_gen(ctx):
@@ -194,7 +195,7 @@ def cmd_gen_dmap(ctx, config):
 @cmd_gen.command("weight")
 @click.option('-c','--config', default='weight', type=str, help='Section name in config file.')
 @click.option('-n','--name', default='weight_domain_', type=str, help='Prefix for result names.')
-@click.option('-d','--dmap', default='domain_map',  type=str, help='Name of domain map result.')
+@click.option('-dm','--dmap', default='domain_map',  type=str, help='Name of domain map result.')
 @click.option('-r','--exrad', default=0.7, type=float, help='Exclusion radius.')
 @click.pass_context
 def cmd_gen_weight(ctx, config, name, dmap, exrad):
@@ -210,15 +211,15 @@ def cmd_gen_weight(ctx, config, name, dmap, exrad):
         return
 
     domap = gres.data[0].data
-    for dom in domap:
-        pos = dom[2]
+    for entry in domap:
+        dom, elect, pos = entry[0], entry[1], entry[2]
         if abs(pos[1]) > exrad or abs(pos[2]) > exrad:
             continue
-        par = ['weight:domain='+str(dom[0])]
+        par = ['weight:domain='+str(dom)]
 
-        click.echo('Running boundary for electrode {} domain = {}'.format(dom[1],dom[0]))
+        click.echo('Running boundary for electrode {} domain = {}'.format(elect,dom))
         add_params(ctx, par)
-        ctx.invoke(cmd_boundary, config=config, name=name+str(dom[1]))
+        ctx.invoke(cmd_boundary, config=config, name=name+str(dom))
 
 @cmd_gen.command("raster")
 @click.option('-c','--config', default='weight_raster', type=str, help='Section name in config file.')
@@ -257,26 +258,27 @@ def cmd_gen_raster(ctx, config, name, boundary):
 @click.option("-g","--geoconfig", default='geometry', type=str, help="Section name of geometry in config.")
 @click.option('-n','--name', default='genvtx', type=str, help='Name of result.')
 @click.option('-d','--dirname', default='gen_step_vtx', type=str, help='Name of created directory.')
+@click.option('-dm','--dmap', default='domain_map',  type=str, help='Name of domain map result.')
 @click.pass_context
-def cmd_gen_vtx(ctx, source, geoconfig, name, dirname):
+def cmd_gen_vtx(ctx, source, geoconfig, name, dirname, dmap):
     '''
-    Generate step vertices for pixel array.
+    Generate step vertices for electrode array.
     This will create new step vertices in global coordinates based on
-    electrode IDs and relative starting positions in the template step file.
+    electrode domain IDs and relative starting positions in the template step file.
     Will create a directory of step files to use for stepping in
     the corresponding weighting field. 
     Template file should have something similar to:\n
-    pixels 8 9 10 11 \n
+    domains 8 9 10 11 \n
     0.75 0 0
     '''
     import pixsim.geometry as geometry
     pixcoll = geometry.make_pixels(**ctx.obj['cfg'][geoconfig])
 
-    do_pixels, do_pos = list(), list()
+    do_domains, do_pos = list(), list()
     with open(source) as f:
-        pixelline = f.readline().split()
-        assert(pixelline[0]=='pixels' and 'Header assumed to be \'pixels\'')
-        do_pixels = [pix for pix in pixelline[1:]]
+        domainline = f.readline().split()
+        assert(domainline[0]=='domains' and 'Header assumed to be \'domains\'')
+        do_domains = [int(dom) for dom in domainline[1:]]
         while True:
             linevec = f.readline().split()
             if len(linevec) < 1:
@@ -285,24 +287,32 @@ def cmd_gen_vtx(ctx, source, geoconfig, name, dirname):
             assert(len(pos) == 3)
             do_pos.append(pos)
 
+    ses = ctx.obj['session']
+    gres = get_result(ses, name=dmap)
+    if gres is None:
+        click.echo("No matching results for name = {}".format(dmap))
+        return
+    domap = gres.data[0].data
+
     # generate 
     import os
     os.mkdir(dirname)
 
     arrs = list()
-    for pid in do_pixels:
-        filename = 'pixel'+str(pid)+'_'+name+'.txt'
+    for did in do_domains:
+        # find the center position of this domain
+        cent = None
+        # dmap entries => (domainid, pid, center)
+        for entry in domap:
+            if entry[0] == did:
+                cent = entry[2]
+                break
+        assert(cent is not None)
+
+        filename = 'domain'+str(did)+'_'+name+'.txt'
         path = os.path.join(dirname, filename)
         for count,rpos in enumerate(do_pos,1):
             callit = name+str(count)
-            # find the position of this pixel
-            cent = None
-            for pix in pixcoll:
-                pixelname,hdim,center,shape = pix.info()
-                if pid in pixelname:
-                    cent = center
-                    break
-            assert(cent is not None)
             gpos = [rpos[i]+cent[i] for i in range(0,3)]
             with open(path, 'w') as f:
                 out = [callit,str(gpos[0]),str(gpos[1]),str(gpos[2])]
@@ -325,16 +335,15 @@ def cmd_gen_step(ctx, dirname, velocity, geoconfig, config, name):
     path = os.path.join(cwd,dirname)
     files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
 
-    print 'hello'
     for file in files:
         filepath = os.path.join(path,file)
-        pidname = file.split('_')
+        didname = file.split('_')
 
         par = ['step:stepfile='+filepath]
 
         click.echo('Running step for filepath {}'.format(filepath))
         add_params(ctx, par)
-        ctx.invoke(cmd_step, velocity=velocity, geoconfig=geoconfig, config=config, name=name+str(pidname[0]))
+        ctx.invoke(cmd_step, velocity=velocity, geoconfig=geoconfig, config=config, name=name+str(didname[0]))
 
 @cmd_gen.command("export")
 @click.option('-s','--save', required=True, type=str, help='Type of result to export.')
@@ -365,14 +374,53 @@ def cmd_gen_export(ctx, save, output, range_id):
         ctx.invoke(cmd_export, save=save, result_id=src, output=output+str(src))
 
 @cmd_gen.command("current")
-@click.option('-c','--config', default='geometry',  type=str, help='Section name in config.')
-@click.option('-o','--output', default='mygeo.geo', type=str, help='The name of the geo file to generate.')
+@click.option('-c','--config', default='current',  type=str, help='Section name in config.')
+@click.option('-n','--name', default='waveforms_for_', type=str, help='The name of the waveform result.')
+@click.option("-r","--raster", type=str, required=True,
+    help="Range of raster result ids. \n\
+        Ex. \n\
+        -r 2:6 sources ids ranging from 2 to and including 6.\n\
+        -r 2: or 2:-1 sources ids ranging from 2 to the end.")
+@click.option("-s","--step", type=str, required=True,
+    help="Range of step result ids. \n\
+        Ex. \n\
+        -s 2:6 sources ids ranging from 2 to and including 6.\n\
+        -s 2: or 2:-1 sources ids ranging from 2 to the end.")
 @click.pass_context
-def cmd_gen_current(ctx, config, output):
+def cmd_gen_current(ctx, config, name, raster, step):
     '''
-    Generate current. Finish this...
+    Generate current. 
     '''
-    return
+    ses = ctx.obj['session']
+    from pixsim.store import get_last_ids
+    total_ids = get_last_ids(ses)['result']
+
+    first_id, last_id, we_got = pythonify(raster, total_ids)
+    if we_got is None:
+        return
+    rasres = {x:get_result(ses,id=x) for x in range(first_id,last_id+1)}
+    
+    first_id, last_id, we_got = pythonify(step, total_ids)
+    if we_got is None:
+        return
+    stepres = {x:get_result(ses,id=x) for x in range(first_id,last_id+1)}
+    
+    # mapping raster results to step by name
+    for rid,rres in rasres.iteritems():
+        if rres is None:
+            click.echo("No matching results for id = {}".format(rid))
+            continue
+        weight_name = rres.parent.name
+        did = int(weight_name.split('_')[-1])
+        sid = None
+        for sid,sres in stepres.iteritems():
+            if sres is None:
+                click.echo("No matching results for id = {}".format(sid))
+                continue
+            if str(did) in sres.name:
+                click.echo('Running for weight {} and step {}'.format(weight_name, sres.name))
+                resname = name+'raster'+str(rid)+'_step'+str(sid)
+                ctx.invoke(cmd_current, step=sid, raster=rid, config=config, name=resname)
 
 ################################################################
 # Boundary
@@ -404,7 +452,7 @@ def cmd_plot(ctx, result_id, config, quantity):
     click.echo("Plotting {} results for id = {}".format(quantity, result_id))
 
     ses = ctx.obj['session']
-    res = get_result(ses, None, result_id)
+    res = get_result(ses, id=result_id)
     if res is None:
         click.echo("No matching results for id = {}".format(result_id))
         return
@@ -660,13 +708,14 @@ def do_removal(ses, objid, id_range, flv):
             currid = first_id
             obj = getmth(ses, id=currid)
             while obj is not None and obj.id <= last_id:
+                print 
                 click.echo("Removing %s %d %s %s" % (flv,obj.id,obj.name,obj.typename))
                 # if this is a result obj, remove the arrays as well
                 if flv == 'result':
                     rm_arrs(ses, obj.data)
                 ses.delete(obj)
                 currid += 1
-                obj = getmth(ses, None, currid)
+                obj = getmth(ses, id=currid)
             update_ses(ses)
             return
         else:
