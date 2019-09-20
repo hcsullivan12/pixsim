@@ -194,7 +194,7 @@ def cmd_gen_dmap(ctx, config):
 """
 @cmd_gen.command("weight")
 @click.option('-c','--config', default='weight', type=str, help='Section name in config file.')
-@click.option('-n','--name', default='weight_domain_', type=str, help='Prefix for result names.')
+@click.option('-n','--name', default='', type=str, help='Prefix for result names.')
 @click.option('-dm','--dmap', default='domain_map',  type=str, help='Name of domain map result.')
 @click.option('-r','--exrad', default=0.7, type=float, help='Exclusion radius.')
 @click.pass_context
@@ -202,7 +202,7 @@ def cmd_gen_weight(ctx, config, name, dmap, exrad):
     '''
     Generate weights. Used to generate the weighting fields
     for a collection of electrodes (gen weight). Expecting
-    a domain_map in the store.  
+    a domain_map in the store. 
     '''
     ses = ctx.obj['session']
     gres = get_result(ses, name=dmap, id=None)
@@ -219,11 +219,12 @@ def cmd_gen_weight(ctx, config, name, dmap, exrad):
 
         click.echo('Running boundary for electrode {} domain = {}'.format(elect,dom))
         add_params(ctx, par)
-        ctx.invoke(cmd_boundary, config=config, name=name+str(dom))
+        callit = name+'_weight_domain_'+str(dom)
+        ctx.invoke(cmd_boundary, config=config, name=callit)
 
 @cmd_gen.command("raster")
 @click.option('-c','--config', default='weight_raster', type=str, help='Section name in config file.')
-@click.option('-n','--name', default='weight_raster_resid_', type=str, help='Prefix for result names.')
+@click.option('-n','--name', default='', type=str, help='Prefix for result names.')
 @click.option("-b","--boundary", type=str, required=True,
     help="Range of boundary result ids. \n\
         Ex. \n\
@@ -251,12 +252,19 @@ def cmd_gen_raster(ctx, config, name, boundary):
         return
     for src in sources:
         click.echo('Running for {}'.format(str(src)))
-        ctx.invoke(cmd_raster, config=config, boundary=src, name=name+str(src))
+        bres = get_result(ses, id=src)
+        if bres is None:
+            click.echo("No matching results for name = {}".format(src))
+            continue
+        # we are using a specific naming convention where the domain is the last string
+        dom = bres.name.split('_')[-1]
+        callit = name+'_weight_raster_domain_'+dom
+        ctx.invoke(cmd_raster, config=config, boundary=src, name=callit)
 
 @cmd_gen.command("vtx")
 @click.option("-s","--source", required=True, type=str, help="Name of template file.")
 @click.option("-g","--geoconfig", default='geometry', type=str, help="Section name of geometry in config.")
-@click.option('-n','--name', default='genvtx', type=str, help='Name of result.')
+@click.option('-n','--name', default='', type=str, help='Prefix for result names.')
 @click.option('-d','--dirname', default='gen_step_vtx', type=str, help='Name of created directory.')
 @click.option('-dm','--dmap', default='domain_map',  type=str, help='Name of domain map result.')
 @click.pass_context
@@ -309,7 +317,7 @@ def cmd_gen_vtx(ctx, source, geoconfig, name, dirname, dmap):
                 break
         assert(cent is not None)
 
-        filename = 'domain'+str(did)+'_'+name+'.txt'
+        filename = name+'genvtx_domain_'+str(did)+'.txt'
         path = os.path.join(dirname, filename)
         for count,rpos in enumerate(do_pos,1):
             callit = name+str(count)
@@ -324,7 +332,7 @@ def cmd_gen_vtx(ctx, source, geoconfig, name, dirname, dmap):
 @click.option("-v","--velocity", default='velocity', type=str, help="Velocity results (name or ID).")
 @click.option("-g","--geoconfig", default='geometry', type=str, help="Section name of geometry in config.")
 @click.option("-c","--config", default='step', type=str, help="Section name in config.")
-@click.option('-n','--name', default='paths_for_', type=str, help='Name of result.')
+@click.option('-n','--name', default='', type=str, help='Prefix for result names.')
 @click.pass_context
 def cmd_gen_step(ctx, dirname, velocity, geoconfig, config, name):
     '''
@@ -337,13 +345,14 @@ def cmd_gen_step(ctx, dirname, velocity, geoconfig, config, name):
 
     for file in files:
         filepath = os.path.join(path,file)
-        didname = file.split('_')
+        dom = os.path.splitext(file)[0].split('_')[-1]
 
         par = ['step:stepfile='+filepath]
 
         click.echo('Running step for filepath {}'.format(filepath))
         add_params(ctx, par)
-        ctx.invoke(cmd_step, velocity=velocity, geoconfig=geoconfig, config=config, name=name+str(didname[0]))
+        callit = name+'_paths_for_domain_'+dom
+        ctx.invoke(cmd_step, velocity=velocity, geoconfig=geoconfig, config=config, name=callit)
 
 @cmd_gen.command("export")
 @click.option('-s','--save', required=True, type=str, help='Type of result to export.')
@@ -375,7 +384,7 @@ def cmd_gen_export(ctx, save, output, range_id):
 
 @cmd_gen.command("current")
 @click.option('-c','--config', default='current',  type=str, help='Section name in config.')
-@click.option('-n','--name', default='waveforms_for_', type=str, help='The name of the waveform result.')
+@click.option('-n','--name', default='', type=str, help='Prefix for result names.')
 @click.option("-r","--raster", type=str, required=True,
     help="Range of raster result ids. \n\
         Ex. \n\
@@ -394,33 +403,38 @@ def cmd_gen_current(ctx, config, name, raster, step):
     ses = ctx.obj['session']
     from pixsim.store import get_last_ids
     total_ids = get_last_ids(ses)['result']
-
+     
     first_id, last_id, we_got = pythonify(raster, total_ids)
     if we_got is None:
         return
     rasres = {x:get_result(ses,id=x) for x in range(first_id,last_id+1)}
-    
     first_id, last_id, we_got = pythonify(step, total_ids)
     if we_got is None:
         return
     stepres = {x:get_result(ses,id=x) for x in range(first_id,last_id+1)}
-    
-    # mapping raster results to step by name
+     
+    # mapping raster results to step by matching domain_##
     for rid,rres in rasres.iteritems():
         if rres is None:
             click.echo("No matching results for id = {}".format(rid))
             continue
-        weight_name = rres.parent.name
-        did = int(weight_name.split('_')[-1])
-        sid = None
+        domainid = rres.name.split('_')[-1]
+        usethisstep = None
+        # find step result with matching domain ID
         for sid,sres in stepres.iteritems():
             if sres is None:
                 click.echo("No matching results for id = {}".format(sid))
                 continue
-            if str(did) in sres.name:
-                click.echo('Running for weight {} and step {}'.format(weight_name, sres.name))
-                resname = name+'raster'+str(rid)+'_step'+str(sid)
-                ctx.invoke(cmd_current, step=sid, raster=rid, config=config, name=resname)
+            checkthis = sres.name.split('_')[-1]
+            if domainid == checkthis:
+                usethisstep = sres
+                break
+        if usethisstep is None:
+            raise AssertionError('Could not find matching domain ID')
+
+        click.echo('Running for weight {} and step {}'.format(rres.parent.name, usethisstep.name))
+        callit = name+'_waveforms_for_domain_'+domainid
+        ctx.invoke(cmd_current, step=usethisstep.id, raster=rid, config=config, name=callit)
 
 ################################################################
 # Boundary
