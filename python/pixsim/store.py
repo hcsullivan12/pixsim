@@ -42,17 +42,15 @@ def get_array(ses, name=None, id=None):
         return arrays(ses).get(id)
 
 def dump_array(ses, arr):
-    print 'Contents of',arr.name,'...'
-    arr = arr.data
-    dim = list(arr.shape)
-    print 'Shape =',arr.shape
+    print 'id: %-2s  name: %-10s  typename: %-10s  shape: %-10s' % (arr.id, arr.name, arr.typename, arr.data.shape)
+    dim = list(arr.data.shape)
     if len(dim) == 4:
-        print 'x =',arr[0,:,:,:].reshape(arr[0].size)
-        print 'y =',arr[1,:,:,:].reshape(arr[1].size)
-        print 'z =',arr[2,:,:,:].reshape(arr[2].size)
-        print 'Average x component =',sum(arr[0,:,:,:].reshape(arr[0].size))/arr[0].size
-    else:
-        print arr
+        #print 'x =',arr[0,:,:,:].reshape(arr[0].size)
+        #print 'y =',arr[1,:,:,:].reshape(arr[1].size)
+        #print 'z =',arr[2,:,:,:].reshape(arr[2].size)
+        print 'Average x component =',sum(arr.data[0,:,:,:].reshape(arr.data[0].size))/arr.data[0].size
+    #else:
+    #    print arr
 
 def dump_arrays(ses):
     print 'Arrays...'
@@ -61,6 +59,8 @@ def dump_arrays(ses):
 
 def dump_result(ses, res):
     print 'id: %-2s  name: %-10s  typename: %-10s  data: %-2s  parent: %-2s' % (res.id, res.name, res.typename, len(res.data), res.parent_id)
+    arrids = [str(arr.id) for arr in res.data]
+    print '\tarrays...', ', '.join(arrids)
 
 def dump_results(ses):
     print 'Results...'

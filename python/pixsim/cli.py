@@ -440,41 +440,86 @@ def cmd_boundary(ctx, config, name):
 
 ################################################################
 # Plot
-@cli.command("plot")
+@cli.group("plot", help="Plot results.")
+@click.pass_context
+def cmd_plot(ctx):
+    '''
+    Entry point into plotting results.
+    '''
+    return
+
+@cmd_plot.command("potential")
 @click.option("-r","--result_id", default=None, type=int, help="Result ID of results to use.")
 @click.option('-c','--config', default='plotting', help='Section name in config.')
-@click.option('-q','--quantity', default=None, type=str, help='Quantity to plot (potential/efield/waveforms).')
 @click.pass_context
-def cmd_plot(ctx, result_id, config, quantity):
+def cmd_plot_potential(ctx, result_id, config):
     '''
-    Plotting results.
+    Plot potential.
     '''
-    click.echo("Plotting {} results for id = {}".format(quantity, result_id))
-
     ses = ctx.obj['session']
     res = get_result(ses, id=result_id)
     if res is None:
         click.echo("No matching results for id = {}".format(result_id))
         return
 
-    points, linspaces, pot, grad, waveforms = None, None, None, None, None
-    if quantity == 'potential' or quantity == 'gradient':
-        points, linspaces, pot, grad = find_data(res, ['points', 'linspace', 'scalar', 'vector'])
-    elif quantity == 'waveforms':
-        waveforms = [arr.data for arr in res.data]
-        
+    points, linspaces, pot, grad = find_data(res, ['points', 'linspace', 'scalar', 'vector'])   
     import pixsim.plotting as plt
-    if quantity == 'potential':
-        plt.plot_potential(ctx.obj['mesh_filename'], linspaces, points, pot, **ctx.obj['cfg'][config])
+    plt.plot_potential(ctx.obj['mesh_filename'], linspaces, points, pot, **ctx.obj['cfg'][config])
+
+"""
+@todo Change result ID to name or ID.
+"""
+@cmd_plot.command("efield")
+@click.option("-r","--result_id", default=None, type=int, help="Result ID of results to use.")
+@click.option('-c','--config', default='plotting', help='Section name in config.')
+@click.pass_context
+def cmd_plot_efield(ctx, result_id, config):
+    '''
+    Plot efield.
+    '''
+    ses = ctx.obj['session']
+    res = get_result(ses, id=result_id)
+    if res is None:
+        click.echo("No matching results for id = {}".format(result_id))
         return
-    elif quantity == 'gradient':
-        plt.plot_efield(ctx.obj['mesh_filename'], grad, **ctx.obj['cfg'][config])
-        return
-    elif quantity == 'waveforms':
-        plt.plot_waveforms(waveforms, **ctx.obj['cfg'][config])
-        return
+    
+    points, linspaces, pot, grad = find_data(res, ['points', 'linspace', 'scalar', 'vector'])
+    import pixsim.plotting as plt
+    plt.plot_efield(ctx.obj['mesh_filename'], grad, **ctx.obj['cfg'][config])
+
+"""
+@todo Change result ID to name or ID.
+"""
+@cmd_plot.command("waveform")
+@click.option('-c','--config', default='plotting', help='Section name in config.')
+@click.option("-w","--waveforms", type=str, required=True,
+    help="Range of current result ids. \n\
+        Ex. \n\
+        -r 2:6 sources ids ranging from 2 to and including 6.\n\
+        -r 2: or 2:-1 sources ids ranging from 2 to the end.")
+@click.pass_context
+def cmd_plot_waveform(ctx, config, waveforms):
+    '''
+    Plot waveforms.
+    '''
+    res = None
+
+    ses = ctx.obj['session']
+    if ':' in waveforms:
+        from pixsim.store import get_last_ids
+        total_ids = get_last_ids(ses)['result']
+
+        first_id, last_id, we_got = pythonify(waveforms, total_ids)
+        if we_got is None:
+            return
+        res = [get_result(ses,id=x) for x in range(first_id,last_id+1)]
     else:
-        click.echo("Cannot plot quantity {}".format(quantity))
+        res = [get_result(ses,id=waveforms)]
+
+    waveforms = [arr.data for r in res for arr in r.data]
+    import pixsim.plotting as plt
+    plt.plot_waveforms(waveforms, **ctx.obj['cfg'][config])
+
 
 ################################################################
 # Play area
@@ -613,7 +658,7 @@ def cmd_current(ctx, step, raster, config, name):
 
     efield, linspaces = find_data(rasres, ['vector', 'linspace'])
     paths  = [p.data for p in sres.data if 'tuples' in p.typename]
-    pnames = [p.name for p in sres.data]
+    pnames = [p.name for p in sres.data if 'tuples' in p.typename]
 
     import pixsim.current as current
     arrays = current.compute(efield, linspaces, paths, pnames)

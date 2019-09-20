@@ -109,10 +109,14 @@ def plot_waveforms(waveforms, **kwds):
     #wvfs = wvfs[0:-1:2]
 
     import matplotlib.pyplot as plt    
+    from scipy.interpolate import make_interp_spline, BSpline
     for w in wvfs:
         x = np.asarray(w[:,0])
         y = np.asarray(w[:,1])
-        plt.plot(x, y)
+        xnew = np.linspace(x.min(),x.max(), 5*len(x)) 
+        spl = make_interp_spline(x, y, k=3)
+        smooth = spl(xnew)
+        plt.plot(xnew,smooth)
 
     plt.xlabel("t [us]",fontsize=20)
     plt.ylabel("current [arb]",fontsize=20)

@@ -471,7 +471,7 @@ def step(vfield,
             x,y,z = position
             start.append(position)
             visitor = stepper(start_time, position, CollectSteps(StopDetection(distance=stuck, geom=geom)))
-            paths.append( Array(typename='tuples', name=name, data=visitor.array) )
+            paths.append( Array(typename='tuples', name='path_from_'+name, data=visitor.array) )
             print 'Stepped',len(visitor.array),' times from (',x,',',y,',',z,') to (',visitor.array[-1][0],',',visitor.array[-1][1],',',visitor.array[-1][2],')'
     
     arr = Array(typename='points', name='vtxs', data=numpy.asarray(start))

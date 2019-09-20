@@ -22,9 +22,8 @@ def compute(efield, linspaces, paths, pnames):
             # should be (x,y,z,u,v,w,t)
             xyz, uvw, time = step[0:3], step[3:6], step[-1] 
             w   = weight(time, xyz)
+            print xyz, uvw, time,w,np.dot(uvw,w)
             waveform.append([time, np.dot(uvw,w)])
-
-        print len(path),len(waveform)
         arr.append( Array(typename='tuples', name='waveform_'+name, data = np.asarray(waveform)) )
 
     return arr
