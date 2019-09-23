@@ -319,10 +319,10 @@ def cmd_gen_vtx(ctx, source, geoconfig, name, dirname, dmap):
 
         filename = name+'genvtx_domain_'+str(did)+'.txt'
         path = os.path.join(dirname, filename)
-        for count,rpos in enumerate(do_pos,1):
-            callit = name+str(count)
-            gpos = [rpos[i]+cent[i] for i in range(0,3)]
-            with open(path, 'w') as f:
+        with open(path, 'w') as f:
+            for count,rpos in enumerate(do_pos,1):
+                callit = name+'vtx'+str(count)
+                gpos = [rpos[i]+cent[i] for i in range(0,3)]
                 out = [callit,str(gpos[0]),str(gpos[1]),str(gpos[2])]
                 out = ' '.join(out)
                 f.write(out+'\n')
