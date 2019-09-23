@@ -682,30 +682,40 @@ def cmd_current(ctx, step, raster, config, name):
 ################################################################
 # Step
 @cli.command("average")
-@click.option("-s","--start", required=True, type=int, help="First waveform result id.")
-@click.option("-e","--end", required=True, type=int, help="Last waveform result id.")
 @click.option('-n','--name', default='averaged_waveforms', type=str, help='Name of result.')
+@click.option("-w","--waveforms", type=str, default=None, 
+    help="Range of results IDs. \n\
+        Ex. \n\
+        -r 2:6 uses ids ranging from 2 to and including 6.\n\
+        -r 2: or 2:-1 uses ids ranging from 2 to the end.")
 @click.pass_context
-def cmd_average(ctx, start, end, name):
+def cmd_average(ctx, name, waveforms):
     '''
     Average waveforms across path results. This assumes paths were identical.
     '''
     ses = ctx.obj['session']
-    currid = start
-    result = get_result(ses, None, currid)
+    from pixsim.store import get_last_ids
+    total_ids = get_last_ids(ses)['result']
+     
+    first_id, last_id, we_got = pythonify(waveforms, total_ids)
+    if we_got is None:
+        return
+
+    ses = ctx.obj['session']
+    result = get_result(ses,id=first_id)
     avgwvf = [w.data for w in result.data]
     names  = [w.name for w in result.data]
-    
-    currid += 1
-    result = get_result(ses, None, currid)
-    while result is not None and result.id <= end:
-        click.echo('Adding waveform from result {}'.format(currid))
+    nres = 0
+    for resid in range(first_id+1,last_id+1):
+        nres+=1
+        result = get_result(ses, id=resid)
+        click.echo('Adding waveform from result {}'.format(resid))
         for path,wvf in enumerate(result.data):
-            for tick in range(0,len(avgwvf[path])):
-                avgwvf[path][tick][1] += wvf.data[tick][1]
-            avgwvf[path][:][1] /= len(avgwvf[path])
-        currid += 1
-        result = get_result(ses, None, currid)
+            for step in range(0,len(wvf.data)):
+                avgwvf[path][step][1] += wvf.data[step][1]
+    
+    for path in range(0, len(avgwvf)):
+        avgwvf[path][:][1] /= nres
     
     wfs = list()
     for wf,nm in zip(avgwvf,names):

@@ -104,11 +104,11 @@ def plot_potential(mshfile, bins, points, pot, height=0.2, draw_potential=1, dra
     cb.set_label('potential [V]', fontsize=20)
     plt.show()
     
-def plot_waveforms(waveforms, **kwds):
+def plot_waveforms(waveforms, normalize=True, **kwds):
     wvfs = np.asarray(waveforms)
-    #wvfs = wvfs[0:-1:2]
 
     import matplotlib.pyplot as plt    
+    plt.figure(figsize=(10,10))
     from scipy.interpolate import make_interp_spline, BSpline
     for w in wvfs:
         x = np.asarray(w[:,0])
@@ -116,10 +116,12 @@ def plot_waveforms(waveforms, **kwds):
         xnew = np.linspace(x.min(),x.max(), 5*len(x)) 
         spl = make_interp_spline(x, y, k=3)
         smooth = spl(xnew)
+        if normalize:
+            smooth /= np.sum(smooth)
         plt.plot(xnew,smooth)
 
-    plt.xlabel("t [us]",fontsize=20)
-    plt.ylabel("current [arb]",fontsize=20)
-    plt.xticks(fontsize=20)
-    plt.yticks(fontsize=20)
+    plt.xlabel("t [us]",fontsize=10)
+    plt.ylabel("current [arb]",fontsize=10)
+    plt.xticks(fontsize=10)
+    plt.yticks(fontsize=10)
     plt.show()
