@@ -506,13 +506,14 @@ def cmd_plot_efield(ctx, result_id, config):
 """
 @cmd_plot.command("waveform")
 @click.option('-c','--config', default='plotting', help='Section name in config.')
+@click.option('-n','--name', type=str, default=None, help='Name pattern in waveforms.')
 @click.option("-w","--waveforms", type=str, required=True,
     help="Range of current result ids. \n\
         Ex. \n\
         -r 2:6 sources ids ranging from 2 to and including 6.\n\
         -r 2: or 2:-1 sources ids ranging from 2 to the end.")
 @click.pass_context
-def cmd_plot_waveform(ctx, config, waveforms):
+def cmd_plot_waveform(ctx, config, waveforms, name):
     '''
     Plot waveforms.
     '''
@@ -530,7 +531,11 @@ def cmd_plot_waveform(ctx, config, waveforms):
     else:
         res = [get_result(ses,id=waveforms)]
 
-    waveforms = [arr.data for r in res for arr in r.data]
+    if name is None:
+        waveforms = [arr.data for r in res for arr in r.data]
+    else:
+        waveforms = [arr.data for r in res for arr in r.data if name == arr.name.split('_')[-1]]
+        
     import pixsim.plotting as plt
     plt.plot_waveforms(waveforms, **ctx.obj['cfg'][config])
 
@@ -683,7 +688,7 @@ def cmd_current(ctx, step, raster, config, name):
 # Step
 @cli.command("average")
 @click.option('-n','--name', default='averaged_waveforms', type=str, help='Name of result.')
-@click.option("-w","--waveforms", type=str, default=None, 
+@click.option("-w","--waveforms", type=str, required=True, 
     help="Range of results IDs. \n\
         Ex. \n\
         -r 2:6 uses ids ranging from 2 to and including 6.\n\
@@ -702,26 +707,72 @@ def cmd_average(ctx, name, waveforms):
         return
 
     ses = ctx.obj['session']
+
+    # initialize path names
     result = get_result(ses,id=first_id)
-    avgwvf = [w.data for w in result.data]
-    names  = [w.name for w in result.data]
-    nres = 0
-    for resid in range(first_id+1,last_id+1):
-        nres+=1
-        result = get_result(ses, id=resid)
-        click.echo('Adding waveform from result {}'.format(resid))
-        for path,wvf in enumerate(result.data):
-            for step in range(0,len(wvf.data)):
-                avgwvf[path][step][1] += wvf.data[step][1]
+    path_names = [str(w.name) for w in result.data]
+    waveforms = list()
+    step_size = 0
+
+    # 
+    # We will loop over each path name, store the data from
+    # each result, fill an array which has length max(data)
+    #
+    # This assumes each path started at the same time and
+    # constant step in time
+    #
+    import numpy as np
+    for name in path_names:
+        arrs_to_add = list()
+        max_steps = -1
+        for resid in range(first_id,last_id+1):    
+            result = get_result(ses, id=resid)
+            
+            # making no assumption, look for the correct path
+            use_this_wvf = None
+            for path,wvf in enumerate(result.data):
+                if str(wvf.name) == name:
+                    use_this_wvf = np.asarray(wvf.data)
+                    break
+            if use_this_wvf is None:
+                click.echo('Skipping result {} - Could not find waveform named {}'.format(resid, nm))
+                continue
+
+            # add waveform to arrs
+            if len(use_this_wvf) > max_steps:
+                max_steps = len(use_this_wvf)
+            arrs_to_add.append(use_this_wvf)
+
+        # assuming we used fixed step size in t, we can easily add them
+        avgwvf = np.zeros(max_steps)
+        for arr in arrs_to_add:
+            step_size = arr[1,0]-arr[0,0]
+            wvfarr = arr[:,1]
+            resized = np.zeros_like(avgwvf)
+            resized[:wvfarr.shape[0]] = wvfarr
+            avgwvf = np.add(avgwvf, resized)
+
+        waveforms.append(avgwvf)
+
+    # normalize
+    for wvf in waveforms:
+        wvf /= np.sum(wvf)
+    # for plotting
+    wvf_with_t = list()
+    for wvf in waveforms:
+        new_wvf = list()
+        time = 0
+        for tick in range(0, wvf.shape[0]):
+            point = [time, wvf[tick]]
+            new_wvf.append(np.asarray(point))
+            time += step_size
+        wvf_with_t.append(np.asarray(new_wvf))
     
-    for path in range(0, len(avgwvf)):
-        avgwvf[path][:][1] /= nres
-    
-    wfs = list()
-    for wf,nm in zip(avgwvf,names):
-        thisname = 'avg_waveform_for_'+nm
-        wfs.append(Array(name=thisname, typename='tuples', data=wf))
-    res = Result(name=name, typename='current', data=wfs)
+    arrs = list()
+    for wvf,nm in zip(wvf_with_t,path_names):
+        callit = 'avg_waveform_for_'+nm
+        arrs.append(Array(name=callit, typename='tuples', data=wvf))
+    res = Result(name='average_waveforms', typename='current', data=arrs)
     save_result(ctx, res)
             
 ################################################################

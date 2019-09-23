@@ -59,7 +59,9 @@ def dump_arrays(ses):
 
 def dump_result(ses, res):
     print 'id: %-2s  name: %-10s  typename: %-10s  data: %-2s  parent: %-2s' % (res.id, res.name, res.typename, len(res.data), res.parent_id)
-    arrids = [str(arr.id) for arr in res.data]
+    arrids = [arr.id for arr in res.data]
+    arrids.sort()
+    arrids = [str(s) for s in arrids]
     print '\tarrays...', ', '.join(arrids)
 
 def dump_results(ses):

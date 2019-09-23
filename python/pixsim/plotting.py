@@ -119,6 +119,7 @@ def plot_waveforms(waveforms, normalize=True, **kwds):
         if normalize:
             smooth /= np.sum(smooth)
         plt.plot(xnew,smooth)
+        #break
 
     plt.xlabel("t [us]",fontsize=10)
     plt.ylabel("current [arb]",fontsize=10)
