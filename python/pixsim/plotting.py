@@ -104,25 +104,53 @@ def plot_potential(mshfile, bins, points, pot, height=0.2, draw_potential=1, dra
     cb.set_label('potential [V]', fontsize=20)
     plt.show()
     
-def plot_waveforms(waveforms, normalize=True, **kwds):
+def random_colors(how_many):
+    import random as rnd
+    rgbl=[(rnd.uniform(0,1),rnd.uniform(0,1),rnd.uniform(0,1), 1) for n in range(0,how_many)]
+    return rgbl
+
+def plot_waveforms(waveforms, normalize=True, histogram=True, **kwds):
     wvfs = np.asarray(waveforms)
 
-    import matplotlib.pyplot as plt    
+    import matplotlib.pyplot as plt
+    import matplotlib   
+    from pixsim.current import do_norm
+
     plt.figure(figsize=(10,10))
     from scipy.interpolate import make_interp_spline, BSpline
-    for w in wvfs:
+    colors = [c for c in np.arange(0,1,1./wvfs.shape[0])]
+    for count,w in enumerate(wvfs):
         x = np.asarray(w[:,0])
         y = np.asarray(w[:,1])
-        xnew = np.linspace(x.min(),x.max(), 5*len(x)) 
-        spl = make_interp_spline(x, y, k=3)
-        smooth = spl(xnew)
-        if normalize:
-            smooth /= np.sum(smooth)
-        plt.plot(xnew,smooth)
-        #break
+        print x
+        print y 
 
-    plt.xlabel("t [us]",fontsize=10)
-    plt.ylabel("current [arb]",fontsize=10)
+        step_size = x[1]-x[0]
+        # appending extra zeros
+        to_append = [s for s in np.arange(x[-1], x[-1]+0.5,step_size)]
+        x = np.append(x, to_append)
+        y = np.append(y, [0]*len(to_append))
+
+        if not histogram:
+            xnew = np.linspace(x.min(),x.max(), 5*len(x)) 
+            spl = make_interp_spline(x, y, k=3)
+            smooth = spl(xnew)
+            # because integral of bipolar pulse should be 0, let's not normalize them.
+            # we would divide by large numbers.
+            if normalize and do_norm(smooth):
+                smooth /= abs(np.sum(smooth))
+            plt.plot(xnew,smooth)
+        else:
+            if normalize and do_norm(y):
+                y /= abs(np.sum(y))
+            cmap = matplotlib.cm.get_cmap('gist_rainbow')
+            plt.step(x, y, color=cmap(colors[count]))
+            # plotting bipolars
+            #if not do_norm(y):
+            #    plt.step(x, y, color=cmap(colors[count]))
+
+    plt.xlabel('Time [us]',fontsize=20)
+    plt.ylabel('Current [arb]',fontsize=20)
     plt.xticks(fontsize=10)
     plt.yticks(fontsize=10)
     plt.show()

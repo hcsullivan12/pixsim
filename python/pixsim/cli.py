@@ -414,27 +414,27 @@ def cmd_gen_current(ctx, config, name, raster, step):
     stepres = {x:get_result(ses,id=x) for x in range(first_id,last_id+1)}
      
     # mapping raster results to step by matching domain_##
-    for rid,rres in rasres.iteritems():
-        if rres is None:
-            click.echo("No matching results for id = {}".format(rid))
+    for sid,sres in stepres.iteritems():
+        if sres is None:
+            click.echo("No matching results for id = {}".format(sid))
             continue
-        domainid = rres.name.split('_')[-1]
-        usethisstep = None
-        # find step result with matching domain ID
-        for sid,sres in stepres.iteritems():
-            if sres is None:
-                click.echo("No matching results for id = {}".format(sid))
+        matching_this = sres.name.split('_')[-1]
+        usethisras = None
+        for rid,rres in rasres.iteritems():
+            if rres is None:
+                click.echo("No matching results for id = {}".format(rid))
                 continue
-            checkthis = sres.name.split('_')[-1]
-            if domainid == checkthis:
-                usethisstep = sres
+            domainid = rres.name.split('_')[-1]
+            if domainid == matching_this:
+                usethisras = rres
                 break
-        if usethisstep is None:
+        # make sure we found a match
+        if usethisras is None:
             raise AssertionError('Could not find matching domain ID')
 
-        click.echo('Running for weight {} and step {}'.format(rres.parent.name, usethisstep.name))
+        click.echo('Running for weight {} and step {}'.format(usethisras.parent.name, sres.name))
         callit = name+'_waveforms_for_domain_'+domainid
-        ctx.invoke(cmd_current, step=usethisstep.id, raster=rid, config=config, name=callit)
+        ctx.invoke(cmd_current, step=sres.id, raster=usethisras.id, config=config, name=callit)
 
 ################################################################
 # Boundary
@@ -501,9 +501,6 @@ def cmd_plot_efield(ctx, result_id, config):
     import pixsim.plotting as plt
     plt.plot_efield(ctx.obj['mesh_filename'], grad, **ctx.obj['cfg'][config])
 
-"""
-@todo Change result ID to name or ID.
-"""
 @cmd_plot.command("waveform")
 @click.option('-c','--config', default='plotting', help='Section name in config.')
 @click.option('-n','--name', type=str, default=None, help='Name pattern in waveforms.')
@@ -535,8 +532,9 @@ def cmd_plot_waveform(ctx, config, waveforms, name):
         waveforms = [arr.data for r in res for arr in r.data]
     else:
         waveforms = [arr.data for r in res for arr in r.data if name == arr.name.split('_')[-1]]
-        
+
     import pixsim.plotting as plt
+    click.echo("Plotting {} waveforms...".format(len(waveforms)))
     plt.plot_waveforms(waveforms, **ctx.obj['cfg'][config])
 
 
@@ -696,7 +694,7 @@ def cmd_current(ctx, step, raster, config, name):
 @click.pass_context
 def cmd_average(ctx, name, waveforms):
     '''
-    Average waveforms across path results. This assumes paths were identical.
+    Average waveforms across path results. 
     '''
     ses = ctx.obj['session']
     from pixsim.store import get_last_ids
@@ -706,72 +704,9 @@ def cmd_average(ctx, name, waveforms):
     if we_got is None:
         return
 
+    import pixsim.current as current
     ses = ctx.obj['session']
-
-    # initialize path names
-    result = get_result(ses,id=first_id)
-    path_names = [str(w.name) for w in result.data]
-    waveforms = list()
-    step_size = 0
-
-    # 
-    # We will loop over each path name, store the data from
-    # each result, fill an array which has length max(data)
-    #
-    # This assumes each path started at the same time and
-    # constant step in time
-    #
-    import numpy as np
-    for name in path_names:
-        arrs_to_add = list()
-        max_steps = -1
-        for resid in range(first_id,last_id+1):    
-            result = get_result(ses, id=resid)
-            
-            # making no assumption, look for the correct path
-            use_this_wvf = None
-            for path,wvf in enumerate(result.data):
-                if str(wvf.name) == name:
-                    use_this_wvf = np.asarray(wvf.data)
-                    break
-            if use_this_wvf is None:
-                click.echo('Skipping result {} - Could not find waveform named {}'.format(resid, nm))
-                continue
-
-            # add waveform to arrs
-            if len(use_this_wvf) > max_steps:
-                max_steps = len(use_this_wvf)
-            arrs_to_add.append(use_this_wvf)
-
-        # assuming we used fixed step size in t, we can easily add them
-        avgwvf = np.zeros(max_steps)
-        for arr in arrs_to_add:
-            step_size = arr[1,0]-arr[0,0]
-            wvfarr = arr[:,1]
-            resized = np.zeros_like(avgwvf)
-            resized[:wvfarr.shape[0]] = wvfarr
-            avgwvf = np.add(avgwvf, resized)
-
-        waveforms.append(avgwvf)
-
-    # normalize
-    for wvf in waveforms:
-        wvf /= np.sum(wvf)
-    # for plotting
-    wvf_with_t = list()
-    for wvf in waveforms:
-        new_wvf = list()
-        time = 0
-        for tick in range(0, wvf.shape[0]):
-            point = [time, wvf[tick]]
-            new_wvf.append(np.asarray(point))
-            time += step_size
-        wvf_with_t.append(np.asarray(new_wvf))
-    
-    arrs = list()
-    for wvf,nm in zip(wvf_with_t,path_names):
-        callit = 'avg_waveform_for_'+nm
-        arrs.append(Array(name=callit, typename='tuples', data=wvf))
+    arrs = current.average_paths(ses, name, first_id, last_id)
     res = Result(name='average_waveforms', typename='current', data=arrs)
     save_result(ctx, res)
             

@@ -365,6 +365,8 @@ class Stepper(object):
         vstart = self.velo_fun(time, position)
         vmag = math.sqrt(sum([v**2 for v in vstart]))
         dt = p.lcar / vmag
+        if self.fixed_step:
+                dt = self.fixed_step
         for count in range(p.maxiter):
             try:
                 pnext, error = self.step_fun(position, time, time+dt, self.velo_fun)
