@@ -155,7 +155,7 @@ def cmd_gen_geo(ctx, config, output):
     and exported using GMSH.
     '''
     import pixsim.geometry as geometry
-    pixcoll = geometry.make_pixels(**ctx.obj['cfg'][config])
+    pixcoll = geometry.make_pixels_center(**ctx.obj['cfg'][config])
     tocall = eval("geometry.%s" % ctx.obj['cfg'][config]['method'])
     geo = tocall(output)
     geo.construct_geometry(pixcoll, **ctx.obj['cfg'][config])
@@ -173,12 +173,13 @@ def cmd_gen_dmap(ctx, config):
     for n,v in mesh.field_data.iteritems():
         domains[n] = v[0]
     import pixsim.geometry as geometry
-    pixcoll = geometry.make_pixels(**ctx.obj['cfg'][config])
+    pixcoll = geometry.make_pixels_center(**ctx.obj['cfg'][config])
 
     import numpy as np
     arrs = list()
     for pix in pixcoll:
         name,hdim,center,shape = pix.info()
+        print name
         dom = domains[name]
         pid = int(name[5:]) # assuming name = pixel#
         arrs.append( [dom, pid, center] )
@@ -463,7 +464,7 @@ def cmd_plot(ctx):
     return
 
 @cmd_plot.command("potential")
-@click.option("-r","--result_id", default=None, type=int, help="Result ID of results to use.")
+@click.option("-r","--result_id", required=True, type=int, help="Result ID of results to use.")
 @click.option('-c','--config', default='plotting', help='Section name in config.')
 @click.pass_context
 def cmd_plot_potential(ctx, result_id, config):
@@ -484,7 +485,7 @@ def cmd_plot_potential(ctx, result_id, config):
 @todo Change result ID to name or ID.
 """
 @cmd_plot.command("efield")
-@click.option("-r","--result_id", default=None, type=int, help="Result ID of results to use.")
+@click.option("-r","--result_id", required=True, type=int, help="Result ID of results to use.")
 @click.option('-c','--config', default='plotting', help='Section name in config.')
 @click.pass_context
 def cmd_plot_efield(ctx, result_id, config):
@@ -651,7 +652,7 @@ def cmd_step(ctx, velocity, geoconfig, config, name):
     save_result(ctx, res)
 
 ################################################################
-# Step
+# Current
 @cli.command("current")
 @click.option("-s","--step", default='paths', type=str, help="Step results (name or ID).")
 @click.option("-r","--raster", default='weightraster', type=str, help="Raster results (name or ID).")
@@ -683,7 +684,7 @@ def cmd_current(ctx, step, raster, config, name):
     save_result(ctx, res)
 
 ################################################################
-# Step
+# Average
 @cli.command("average")
 @click.option('-n','--name', default='averaged_waveforms', type=str, help='Name of result.')
 @click.option("-w","--waveforms", type=str, required=True, 
@@ -710,6 +711,39 @@ def cmd_average(ctx, name, waveforms):
     res = Result(name='average_waveforms', typename='current', data=arrs)
     save_result(ctx, res)
             
+################################################################
+# Sim
+@cli.command("sim")
+@click.option("-v","--velocity", default='velocity', type=str, help="Velocity results (name or ID).")
+@click.option("-w","--weight", default='weighting_raster', type=str, help="Weight raster results (name or ID).")
+@click.option("-c","--config", default='sim', type=str, help="Section name in config.")
+@click.pass_context
+def cmd_sim(ctx, velocity, weight, config):
+    '''
+    Integrate drift sim.
+    '''
+    ses = ctx.obj['session']
+    vres = get_result(ses, source=velocity)
+    if vres is None:
+        click.echo("No matching results for name = {}".format(velocity))
+        return
+    rasres = get_result(ses, source=weight)
+    if rasres is None:
+        click.echo("No matching results for name = {}".format(weight))
+        return
+
+    vel = find_data(vres, ['vector'])
+    wfield, points, linspaces = find_data(rasres, ['vector', 'points', 'linspace'])
+
+    import pixsim.geometry as geometry
+    geomsec = ctx.obj['cfg'][config]['geometry']
+    pixcoll = geometry.make_pixels_center(**ctx.obj['cfg'][geomsec])
+    assert(len(pixcoll) > 0)
+
+    import pixsim.driftsim as dsim
+    dsim.sim(vel, wfield, points, linspaces, pixcoll, **ctx.obj['cfg'][config])
+
+
 ################################################################
 # Removal
 @cli.group("rm", help="Remove items from the store.")
@@ -828,7 +862,7 @@ def cmd_rename(ctx, result_id, array_id, name):
     '''
     ses = ctx.obj['session']
     if result_id is not None:
-        result = get_result(ses, None, result_id)
+        result = get_result(ses, id=result_id)
         if result is None:
             click.echo("No matching result result_id = {}".format(result_id))
             return

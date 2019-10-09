@@ -39,6 +39,7 @@ class Field(object):
         self.field = field
         self.linspaces = linspaces
         self.interps = tuple([RegularGridInterpolator(linspaces, c) for c in field])
+        self.v_do_many = numpy.vectorize(self.do_many)
         return
 
     def __call__(self, *point):
@@ -54,6 +55,13 @@ class Field(object):
         point = numpy.asarray(point)
         ret = numpy.asarray([interp(point)[0] for interp in self.interps])
         return ret
+    
+    def do_many(self,pt):
+        print pt
+        return numpy.asarray([interp(pt)[0] for interp in self.interps])
+
+    def do_many_old(self, points):
+        return numpy.transpose([interp(points) for interp in self.interps])
 
 
 class Gradient(object):

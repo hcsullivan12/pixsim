@@ -1,6 +1,90 @@
 import pygmsh
 import numpy as np
 
+def make_pixels_center(pad_spacing   = 0.4, 
+                       grid_dim      = (6,6),
+                       pad_offset    = 0.0,
+                       pad_rmax      = 0.04,
+                       grid_diameter = 0.04,
+                       pad_shape     = 'box',
+                       **kwds):
+    '''
+    Initialize pixels. 
+    '''
+    currentZ = 0.0
+    pixels_z, pixels_y = list(), list()
+    pixels_z.append(currentZ)
+    currentZ += pad_spacing
+    while len(pixels_z) < grid_dim[0]:
+        pixels_z.append(currentZ)
+        pixels_z.append(-1*currentZ)
+        currentZ += pad_spacing
+    currentY = 0.0
+    pixels_y.append(currentY)
+    currentY += pad_spacing
+    while len(pixels_y) < grid_dim[1]:
+        pixels_y.append(currentY)
+        pixels_y.append(-1*currentY)
+        currentY += pad_spacing
+    pixels_z.sort()
+    pixels_y.sort(reverse=True)
+    
+    pixels = list()
+    for y in pixels_y:
+        for z in pixels_z:
+            pixels.append(np.asarray((pad_offset,y,z)))  
+
+    import pixsim.geo as geoobj
+    geo = list()
+    for count,cent in enumerate(pixels,1):
+        pad = None
+        name = 'pixel'+str(count)
+        if pad_shape == 'box':
+            pad = geoobj.Box(name,0.5*grid_diameter,pad_rmax,pad_rmax,cent)
+        elif pad_shape == 'cylinder':
+            pad = geoobj.Cylinder(name,pad_rmax,0.5*grid_diameter,cent,np.asarray([1,0,0]))
+        elif pad_shape == 'sphere':
+            pad = geoobj.Sphere(name,pad_rmax,cent)
+        else:
+            raise ValueError('Shape not supported: %s' % pad_shape)
+        geo.append(pad)
+    return geo
+
+def wire_grid_center(geom, pixels, 
+                     pad_spacing  = 0.4,
+                     pad_offset   = 0.0,
+                     grid_diameter= 0.04,
+                     grid_dim     = (6,6),
+                     **kwds):
+    '''
+    Focusing grid structure made out of wires.
+    '''
+    nelem = 0
+    length = grid_dim[0]*pad_spacing
+    #sp = [pad_offset,0,-0.5*length]
+    #center = geom.add_cylinder(sp, [0,0,length], 0.5*grid_diameter)
+    start = 0.5*pad_spacing
+    for ywire in range(0, int(0.5*grid_dim[0])):
+        sp = [pad_offset,ywire*pad_spacing+start,-0.5*length]
+        wire = geom.add_cylinder(sp, [0,0,length], 0.5*grid_diameter)
+        sp = [pad_offset,-1*ywire*pad_spacing-start,-0.5*length]
+        wire = geom.add_cylinder(sp, [0,0,length], 0.5*grid_diameter)
+        nelem += 2
+    
+    zpos = 0
+    ypos = 0.5*pad_spacing
+    length = pad_spacing-0.05
+    ypos = set([pix.center[1] for pix in pixels])
+    zpos = set([n*pad_spacing+start for n in range(0,int(0.5*grid_dim[1])+1)])
+    temp = set([-1*z for z in zpos])
+    zpos = zpos | temp
+    for y in ypos:
+        for z in zpos:
+            sp = [pad_offset,y-0.5*length, z]
+            wire = geom.add_cylinder(sp, [0,length,0], 0.5*grid_diameter)
+            nelem += 1
+    return geom, nelem
+
 def make_pixels(pad_spacing   = 0.4, 
                 grid_dim      = (6,6),
                 pad_offset    = 0.0,
@@ -188,7 +272,7 @@ class BoxTpc:
                  next_surf += shape_inc[shape]
 
         if build_grid:
-            geom, nelem = wire_grid(geom, pixels, **kwds)
+            geom, nelem = wire_grid_center(geom, pixels, **kwds)
             bound['grid'] = [s for s in range(next_surf,next_surf+nelem*shape_inc['cylinder']+1)]
 
         mesh = pygmsh.generate_mesh(geom, geo_filename=self.geofile)

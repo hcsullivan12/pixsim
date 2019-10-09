@@ -177,12 +177,6 @@ class BatchedStepper_rkck(object):
         rnext[:,:3] += c[1]*k1 +  c[2]*k2 +  c[3]*k3 +  c[4]*k4 +  c[5]*k5 +  c[6]*k6
         rnext[:,3] += dt
 
-        # or can calculate a second step and use it to provide error
-        # rnexts = numpy.copy(points)
-        # rnexts[:,:3] += cs[1]*k1 + cs[2]*k2 + cs[3]*k3 + cs[4]*k4 + cs[5]*k5 + cs[6]*k6
-        # rnexts[:,3] += dt        
-        # return rnext, rnext - rnexts
-
         return rnext
 
 class StopStepping(object):

@@ -155,10 +155,14 @@ class StopDetection(object):
         self.nstuck = 0
         self.geom = geom
 
-    def __call__(self, t1, r1, t2, r2):
+    def __call__(self, r1, r2):
         # check geometry 
         if self.inside(r2):
             return True
+        # are we stepping far enough?
+        return self.stuck(r1,r2)
+    
+    def stuck(self, r1, r2):
         d2 = sum([(a-b)**2 for a,b in zip(r1,r2)])
         if d2 > self.distance2:
             self.nstuck = max(0, self.nstuck-1)
@@ -174,7 +178,6 @@ class StopDetection(object):
             return False
         for node in self.geom:
             if node.inside(r):
-                print 'Inside geometry, stopping!'
                 return True
 
 class CollectSteps(object): 
@@ -225,7 +228,7 @@ class CollectSteps(object):
 
         '''
         self.steps.append(self.Step(t1,r1,v1,t2,r2,error))
-        if self.stop(t1,r1,t2,r2):
+        if self.stop(r1,r2):
             raise StopIteration
         return (t2-t1)*self.bounds(error)
 
@@ -444,7 +447,8 @@ def step(vfield,
          lcar       = 0.01,
          stuck      = 0.01,
          stepfile   = None,
-         stepper    = 'rkck', **kwds):
+         stepper    = 'rkck', 
+         **kwds):
     '''
     Return paths stepped through vfield starting at many points on a
     rectangular patch given by range = ( (xmin, xmax, step), ... ).  
