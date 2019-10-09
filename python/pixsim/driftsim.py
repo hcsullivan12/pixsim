@@ -2,32 +2,9 @@ import ROOT
 import pixsim.step as step
 import pixsim.vector as vector
 import numpy as np
+import random as random
 import time
-
-class Node(object):
-    """Simple node structure."""
-    def __init__(self, data=None, next_node=None):
-        self.data = data
-        self.next_node = next_node
-
-    def set_next(self, new_next):
-        self.next_node = new_next
-
-class LinkedList(object):
-    """Simple linked list structure."""
-    def __init__(self, head=None):
-        self.head = head
-        self.size = 0
-        if self.head is not None:
-            self.size = 1
-
-    def insert(self, data):
-        node = Node(data=data, next_node=self.head)
-        self.head = node
-        self.size += 1
-
-    def __len__(self):
-        return self.size
+import pixsim.ds as ds
 
 class BatchedStepper_rkck(object):
     """Create a batched RK-C/K stepper using 
@@ -64,7 +41,16 @@ class BatchedStepper_rkck(object):
         rnext[:,3] += dt
         return rnext
 
+class Batch(object):
+    """Structure to keep track of tips and ids 
+    for a batch of electron clouds from ntuple."""
+    def __init__(self, tips, ids):
+        self.tips = tips
+        self.ids = ids
+
 def check_next(did_stop, tips, next_points, stopper):
+    """Given the current list of steps and the next step,
+    check if we should stop here or keep stepping."""
     for pt in range(0, len(next_points)):
         if did_stop[pt]:
             continue
@@ -83,15 +69,47 @@ def do_batch_stepping(tips, stepper=None, stopper=None, maxiter=100, fixed_step=
     # array to keep track of stopped paths
     did_stop = [False for n in range(0,len(tips))]
     for istep in range(maxiter):
-        #print 'Step =',istep
         # do the next step
         points = np.asarray([x.head.data for x in tips])
         next_points = stepper(fixed_step, points)
         assert(len(points) == len(next_points))
-        ## check for collision with pixels
+        
+        # check for collision with pixels
         did_stop, tips = check_next(did_stop, tips, next_points, stopper)
+    return tips
 
-def drift(vel, wfield, points, linspaces, geom, entry, 
+def do_batch_induction(my_data, entry, tips, ids, vfield, wfield, linspaces):
+    """This method will calculate the induced current
+    on a pixel due to each electron cloud in the batch.
+
+    The wfield is taken to be centered on the pixel that
+    collected the cloud."""
+
+    velo = vector.Field(vfield, linspaces)
+    def velocity(points):
+        return velo.do_many(points)
+
+    wght = vector.Field(wfield, linspaces)
+    def weight(points):
+        return wght.do_many(points)
+
+    for eid,tip in zip(ids,tips):
+        pid = entry.ides_voxel_ch[eid]
+        el  = entry.ides_numElectrons[eid]
+        # convert electrons to fC
+        el *= 1.6 / 10000
+        # compute waveform
+        xyzts = tip.array()
+        ws = weight(xyzts[:,0:3])
+        vs = velocity(xyzts[:,0:3])
+        wvf = np.einsum('ij,ij->i', vs, ws)
+        wvf = np.vstack((np.around(xyzts[:,-1], decimals=1),wvf)).T
+        wvf[:,1] *= el / abs(np.sum(wvf[:,1]))
+        # add entry 
+        my_data.insert(key=pid, data=wvf)
+    return my_data
+
+def drift(vfield, wfield, points, linspaces, geom, entry, 
           backstep = 1.0, 
           stuck    = 0.01,
           **kwds):
@@ -105,42 +123,70 @@ def drift(vel, wfield, points, linspaces, geom, entry,
     But we will keep the yz positions and step back to 
     x ~= backstep cm to run the stepping procedure. Either way, 
     I think the error here affects all clouds in the same 
-    way and manifests itself as a shift in x or y and z."""
+    way and manifests itself as a shift in x or y and z.
+    
+    @note Unfortunately, the pixel ids come to us ~sorted for 
+          each event, rendering our ds useless. We need to balance 
+          it! Instead of more fancy footwork with the ds, we will 
+          randomize the batches!"""
 
     # method to grab a batch of points
-    def get_batch(pt, bck):
-        smr_ys, smr_zs = np.asarray(entry.ides_y[pt:bck]), np.asarray(entry.ides_z[pt:bck])
-        pix_ys, pix_zs = np.asarray(entry.ides_voxel_y[pt:bck]), np.asarray(entry.ides_voxel_z[pt:bck])
+    def get_batch(entry_list):
+        smr_ys, smr_zs = np.asarray([entry.ides_y[i] for i in entry_list]), np.asarray([entry.ides_z[i] for i in entry_list])
+        pix_ys, pix_zs = np.asarray([entry.ides_voxel_y[i] for i in entry_list]), np.asarray([entry.ides_voxel_z[i] for i in entry_list])
+        # NASTY BUG in larg4 nearest channel
+        for count in range(0,len(smr_ys)):
+            y_diff = smr_ys[count] - pix_ys[count]
+            z_diff = smr_zs[count] - pix_zs[count]
+            if abs(y_diff) > 1.0 or abs(z_diff) > 1.0:
+                print 'WARNING: Nasty Bug',y_diff,z_diff
+                smr_ys[count] = pix_ys[count]
+                smr_zs[count] = pix_zs[count]
+
         rel_ys, rel_zs = np.asarray([smr_ys - pix_ys]).T, np.asarray([smr_zs - pix_zs]).T
         smr_xs = np.asarray([backstep*np.ones(len(smr_ys))]).T
-        smr_ts = np.asarray([[x/0.1648 for x in entry.ides_voxel_x[pt:bck]]]).T
+        smr_ts = np.asarray([[entry.ides_voxel_x[i] for i in entry_list]]).T
         rel_pos = np.concatenate( (smr_xs, rel_ys, rel_zs, smr_ts), axis=1 )
-        rel_pos = [LinkedList(Node(data=x)) for x in rel_pos]
-        return rel_pos
+        rel_pos = [ds.LinkedList(ds.Node(data=x)) for x in rel_pos]
+        batch = Batch(rel_pos, entry_list)
+        return batch
 
     # get the velocity field
-    velo = vector.Field(vel, linspaces)
+    velo = vector.Field(vfield, linspaces)
     def velocity(points):
-        return velo.do_many_old(points)
+        return velo.do_many(points)
 
     stepper = BatchedStepper_rkck(velocity)
     stopper = step.StopDetection(geom=geom, distance=stuck)
 
     # grabbing batches of points
     import sys
-    batch_size = 100
-    for batch,pt in enumerate(range(0,len(entry.ides_x), batch_size),1):
-        bck = pt+batch_size
-        if bck >= len(entry.ides_x):
-            bck = -1 
+    my_data = ds.BST()
+    entries = [x for x in range(0,len(entry.ides_x))]
+    random.shuffle(entries)
 
-        msg = 'Batch = '+str(batch)+' / '+str(len(entry.ides_x)/batch_size)
+    batch_size = 100
+    for bid,index in enumerate(range(0,len(entries), batch_size),1):
+        bck = index+batch_size
+        if bck >= len(entries):
+            bck = len(entries)-1
+
+        msg = 'Batch = '+str(bid)+' / '+str(np.ceil(len(entries)/batch_size))
         sys.stdout.write("\r%s" % msg)
         sys.stdout.flush()
-        true_start_xs  = np.asarray(entry.ides_x[pt:bck])
-        rel_pos = get_batch(pt, bck)
-        do_batch_stepping(rel_pos, stepper=stepper, stopper=stopper, **kwds)
-    print '\n'
+
+        use_this_batch = [entries[i] for i in range(index,bck+1)]
+        batch = get_batch(use_this_batch)
+
+        # do the stepping
+        batch.tips = do_batch_stepping(batch.tips, stepper=stepper, stopper=stopper, **kwds)
+        # do the induction
+        my_data = do_batch_induction(my_data, entry, batch.tips, batch.ids, vfield, wfield, linspaces)
+
+    print ''
+    print len(my_data),'pixels collected charge'
+
+     
 
 def sim(vel, wfield, points, linspaces, geom, ntuple=None, **kwds):
     """This method will loop over the events in an ntuple.
@@ -155,6 +201,7 @@ def sim(vel, wfield, points, linspaces, geom, ntuple=None, **kwds):
     for entry in rtree:
         print 'drifting event',entry.event
         drift(vel, wfield, points, linspaces, geom, entry, **kwds)
+        break
 
 
 
