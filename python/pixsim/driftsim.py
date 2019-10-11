@@ -78,7 +78,9 @@ def do_batch_stepping(tips, stepper=None, stopper=None, maxiter=100, fixed_step=
         did_stop, tips = check_next(did_stop, tips, next_points, stopper)
     return tips
 
-def do_batch_induction(my_data, entry, tips, ids, vfield, wfield, linspaces):
+def do_batch_induction(my_data, entry, tips, ids, vfield, wfield, linspaces, 
+                       fixed_step=0.1,
+                       **kwds):
     """This method will calculate the induced current
     on a pixel due to each electron cloud in the batch.
 
@@ -103,15 +105,31 @@ def do_batch_induction(my_data, entry, tips, ids, vfield, wfield, linspaces):
         ws = weight(xyzts[:,0:3])
         vs = velocity(xyzts[:,0:3])
         wvf = np.einsum('ij,ij->i', vs, ws)
-        wvf = np.vstack((np.around(xyzts[:,-1], decimals=1),wvf)).T
-        wvf[:,1] *= el / abs(np.sum(wvf[:,1]))
+        new_ticks = (10*np.around(xyzts[:,-1], decimals=1 )).astype(int) # converting ticks to integers
+        wvf *= el / abs(np.sum(wvf)) # normalize to numElectrons
         # add entry 
-        my_data.insert(key=pid, data=wvf)
+        if pid in my_data.keys():
+            old_wvf = my_data[pid]
+            for k,v in zip(new_ticks,wvf):
+                if k in old_wvf.keys():
+                    old_wvf[k] += v
+                else:
+                    old_wvf[k] = v    
+            my_data[pid] = old_wvf
+        else:
+            new_wvf = {k:v for k,v in zip(new_ticks,wvf)}
+            my_data[pid] = new_wvf
     return my_data
+
+def make_waveforms(my_data):
+    """Combine the contents of the data to
+    form single waveforms for each pixel."""
+
 
 def drift(vfield, wfield, points, linspaces, geom, entry, 
           backstep = 1.0, 
           stuck    = 0.01,
+          drift_speed = 0.163, # cm/us
           **kwds):
     """This method will step the clouds from an initial point
     through the electric field, collect on nearest pixel, and
@@ -124,11 +142,7 @@ def drift(vfield, wfield, points, linspaces, geom, entry,
     x ~= backstep cm to run the stepping procedure. Either way, 
     I think the error here affects all clouds in the same 
     way and manifests itself as a shift in x or y and z.
-    
-    @note Unfortunately, the pixel ids come to us ~sorted for 
-          each event, rendering our ds useless. We need to balance 
-          it! Instead of more fancy footwork with the ds, we will 
-          randomize the batches!"""
+    """
 
     # method to grab a batch of points
     def get_batch(entry_list):
@@ -145,7 +159,8 @@ def drift(vfield, wfield, points, linspaces, geom, entry,
 
         rel_ys, rel_zs = np.asarray([smr_ys - pix_ys]).T, np.asarray([smr_zs - pix_zs]).T
         smr_xs = np.asarray([backstep*np.ones(len(smr_ys))]).T
-        smr_ts = np.asarray([[entry.ides_voxel_x[i] for i in entry_list]]).T
+        smr_ts = np.asarray([[entry.ides_voxel_x[i]/drift_speed for i in entry_list]]).T
+
         rel_pos = np.concatenate( (smr_xs, rel_ys, rel_zs, smr_ts), axis=1 )
         rel_pos = [ds.LinkedList(ds.Node(data=x)) for x in rel_pos]
         batch = Batch(rel_pos, entry_list)
@@ -161,7 +176,7 @@ def drift(vfield, wfield, points, linspaces, geom, entry,
 
     # grabbing batches of points
     import sys
-    my_data = ds.BST()
+    my_data = dict()
     entries = [x for x in range(0,len(entry.ides_x))]
     random.shuffle(entries)
 
@@ -181,11 +196,12 @@ def drift(vfield, wfield, points, linspaces, geom, entry,
         # do the stepping
         batch.tips = do_batch_stepping(batch.tips, stepper=stepper, stopper=stopper, **kwds)
         # do the induction
-        my_data = do_batch_induction(my_data, entry, batch.tips, batch.ids, vfield, wfield, linspaces)
+        my_data = do_batch_induction(my_data, entry, batch.tips, batch.ids, vfield, wfield, linspaces, **kwds)
 
     print ''
     print len(my_data),'pixels collected charge'
 
+    make_waveforms(my_data)
      
 
 def sim(vel, wfield, points, linspaces, geom, ntuple=None, **kwds):
