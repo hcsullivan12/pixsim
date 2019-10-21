@@ -178,6 +178,8 @@ class StopDetection(object):
             return False
         for node in self.geom:
             if node.inside(r):
+                if 'pixel25' not in node.name:
+                    raise Exception
                 return True
 
 class CollectSteps(object): 

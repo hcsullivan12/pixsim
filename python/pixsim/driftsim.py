@@ -48,7 +48,7 @@ class Batch(object):
         self.tips = tips
         self.ids = ids
 
-def check_next(did_stop, tips, next_points, stopper):
+def check_next(did_stop, exclude, tips, next_points, stopper):
     """Given the current list of steps and the next step,
     check if we should stop here or keep stepping."""
     for pt in range(0, len(next_points)):
@@ -56,18 +56,24 @@ def check_next(did_stop, tips, next_points, stopper):
             continue
         the_tip_pt  = tips[pt].head.data
         the_next_pt = next_points[pt]
-        if stopper(the_tip_pt[0:3],the_next_pt[0:3]):
-            did_stop[pt] = True
-        tips[pt].insert(the_next_pt)
-    return did_stop, tips
+        try:
+            didit = stopper(the_tip_pt[0:3],the_next_pt[0:3])
+            if didit:
+                did_stop[pt] = True
+        except:
+            exclude[pt] = True
 
-def do_batch_stepping(tips, stepper=None, stopper=None, maxiter=100, fixed_step=0.1, **kwds):
+        tips[pt].insert(the_next_pt)
+    return did_stop, exclude, tips
+
+def do_batch_stepping(tips, stepper=None, stopper=None, maxiter=300, fixed_step=0.05, **kwds):
     """Method to apply stepping procedure on
     batch of points."""
     if len(tips) == 0:
         return
-    # array to keep track of stopped paths
+    # array to keep track of stopped paths and paths that do not make it to center pixel
     did_stop = [False for n in range(0,len(tips))]
+    exclude = [False for n in range(0,len(tips))]
     for istep in range(maxiter):
         # do the next step
         points = np.asarray([x.head.data for x in tips])
@@ -75,11 +81,17 @@ def do_batch_stepping(tips, stepper=None, stopper=None, maxiter=100, fixed_step=
         assert(len(points) == len(next_points))
         
         # check for collision with pixels
-        did_stop, tips = check_next(did_stop, tips, next_points, stopper)
-    return tips
+        did_stop, exclude, tips = check_next(did_stop, exclude, tips, next_points, stopper)
+    return tips, exclude
 
-def do_batch_induction(my_data, entry, tips, ids, vfield, wfield, linspaces, 
-                       fixed_step=0.1,
+def round_down(x, fixed_step):
+    return np.floor(x / fixed_step) * fixed_step
+
+def round_near(x, base):
+    return (base * np.round(x/base)).astype(int)
+
+def do_batch_induction(my_data, exclude, entry, tips, ids, vfield, wfield, linspaces, 
+                       fixed_step=0.05,
                        **kwds):
     """This method will calculate the induced current
     on a pixel due to each electron cloud in the batch.
@@ -95,18 +107,35 @@ def do_batch_induction(my_data, entry, tips, ids, vfield, wfield, linspaces,
     def weight(points):
         return wght.do_many(points)
 
-    for eid,tip in zip(ids,tips):
+    base = int(str(fixed_step)[::-1].find('.'))
+    tick_conversion = 10**base
+
+    for eid, tip, excl in zip(ids, tips, exclude):
+        if excl:
+            continue
         pid = entry.ides_voxel_ch[eid]
         el  = entry.ides_numElectrons[eid]
         # convert electrons to fC
         el *= 1.6 / 10000
+
         # compute waveform
+        # velocity --> cm/us
+        # charge --> fC
+        # current = q * W * v = fC * 1/cm * cm/us = nA
         xyzts = tip.array()
         ws = weight(xyzts[:,0:3])
         vs = velocity(xyzts[:,0:3])
         wvf = np.einsum('ij,ij->i', vs, ws)
-        new_ticks = (10*np.around(xyzts[:,-1], decimals=1 )).astype(int) # converting ticks to integers
-        wvf *= el / abs(np.sum(wvf)) # normalize to numElectrons
+        # converting ticks to integers
+        # this is to fix edge cases where a tick is not rounding correctly
+        new_ticks = round_near(tick_conversion*xyzts[:,-1], base)
+
+        # clip the end if we have duplicate
+        if new_ticks[-1] == new_ticks[-2]:
+            rm = new_ticks.pop()
+            wvf = wvf[:-1]
+
+        wvf *= el / abs(fixed_step*np.sum(wvf)) # normalize to numElectrons
         # add entry 
         if pid in my_data.keys():
             old_wvf = my_data[pid]
@@ -121,13 +150,117 @@ def do_batch_induction(my_data, entry, tips, ids, vfield, wfield, linspaces,
             my_data[pid] = new_wvf
     return my_data
 
-def make_waveforms(my_data):
+def make_rtds(my_data,
+              schmitt_time=0.02, 
+              threshold=0.1, 
+              gain=1.0): 
+    """Integrate waveforms directly and return RTDs."""
+
+    pids = [p for p in my_data.keys()]
+    base = int(str(fixed_step)[::-1].find('.'))
+    tick_conversion = 10**base
+    for p in pids:
+        wvf = my_data[p]
+        ts = sorted(wvf)
+        ys = [wvf[t] for t in ts]
+        ts = [1.0*t/tick_conversion for t in ts] # converting back to float (us)
+        # appending extra zeros
+        step_size = ts[1]-ts[0]
+        to_append = [s for s in np.arange(ts[-1], ts[-1]+0.5,step_size)]
+        ts = np.append(ts, to_append)
+        ys = np.append(ys, [0]*len(to_append)) 
+
+        # integrate
+        sch_data = {t:0 for t in np.arange(ts[0], ts[-1], schmitt_time)}
+        ana_data = sch_data
+        charge = 0
+        for tick,amp in zip(ts,ys):
+            charge += amp*step_size # nA * us = fC
+            if charge >= threshold:
+                charge = 0
+                sch_data[tick] = 0.5
+            ana_data[tick] = charge
+
+        sch_ts = sorted(sch_data)
+        sch_ys = [sch_data[t] for t in sch_ts]
+        ana_ys = [ana_data[t] for t in sch_ts]
+        return sch_ts, sch_ys, ana_ys
+
+def make_waveforms(my_data,
+                   schmitt_time=0.02,
+                   threshold=1.0, # fC
+                   gain=0.1, # V/fC
+                   fixed_step=0.02,
+                   **kwds):
     """Combine the contents of the data to
     form single waveforms for each pixel."""
+    import matplotlib.pyplot as plt
+    pids = [p for p in my_data.keys()]
+    base = int(str(fixed_step)[::-1].find('.'))
+    tick_conversion = 10**base
+    for p in pids:
+        wvf = my_data[p]
+        ts = sorted(wvf)
+        ys = [wvf[t] for t in ts]
+        # appending extra zeros
+        step_size = ts[1]-ts[0]
+        to_append = [s for s in np.arange(ts[-1]+step_size, ts[-1]+50,step_size)]
+        ts = np.append(ts, to_append)
+        ys = np.append(ys, [0]*len(to_append)) 
 
+        # integrate
+        sch_data = {t:0 for t in np.arange(ts[0], ts[-1], 100*schmitt_time)}
+        sch_hits = list()
+        ana_data = {t:0 for t in ts}
+        charge = 0
+        for tick,amp in zip(ts,ys):
+            charge += amp*fixed_step # nA * us = fC
+            ana_data[tick] = charge*gain
+            if charge >= threshold:
+                charge = 0
+                sch_data[tick] = 2.0
+                sch_hits.append(tick)
+
+        sch_ts = sorted(sch_data)
+        ana_ts = sorted(ana_data)
+        sch_hits.sort()
+        sch_ys = [sch_data[t] for t in sch_ts]
+        ana_ys = [ana_data[t] for t in ana_ts]
+
+        # reconstructing
+        reco_data = {t:0 for t in ts}
+        for tick in range(1, len(sch_hits)):
+            pre_time = sch_hits[tick-1]
+            cur_time = sch_hits[tick]
+            delta_t = cur_time-pre_time
+            for tbin in np.arange(pre_time, cur_time, step_size):
+                reco_data[tbin] = tick_conversion * threshold / delta_t 
+
+        reco_ys = [reco_data[t] for t in ts]
+
+        # converting back to float (us)
+        ts     = [1.0*t/tick_conversion for t in ts]
+        sch_ts = [1.0*t/tick_conversion for t in sch_ts]
+        ana_ts = [1.0*t/tick_conversion for t in ana_ts]
+        
+        fig, (ax1, ax2) = plt.subplots(2, sharex=True, figsize=(15, 15))
+
+        ax1.step(ts, ys)
+        ax1.step(ts, reco_ys)
+        ax2.step(sch_ts, sch_ys)
+        ax2.step(ana_ts, ana_ys)
+
+        fig.subplots_adjust(hspace=0)
+        plt.xlabel('Time [us]',fontsize=15)
+        ax1.set_ylabel('Current [nA]',fontsize=15)
+        ax2.set_ylabel('Voltage [V]',fontsize=15)
+        plt.xticks(fontsize=10)
+        plt.yticks(fontsize=10)
+        plt.setp([a.get_xticklabels() for a in fig.axes[:-1]], visible=False)
+        plt.show()
 
 def drift(vfield, wfield, points, linspaces, geom, entry, 
-          backstep = 1.0, 
+          backstep = 0.5, 
           stuck    = 0.01,
           drift_speed = 0.163, # cm/us
           **kwds):
@@ -159,7 +292,7 @@ def drift(vfield, wfield, points, linspaces, geom, entry,
 
         rel_ys, rel_zs = np.asarray([smr_ys - pix_ys]).T, np.asarray([smr_zs - pix_zs]).T
         smr_xs = np.asarray([backstep*np.ones(len(smr_ys))]).T
-        smr_ts = np.asarray([[entry.ides_voxel_x[i]/drift_speed for i in entry_list]]).T
+        smr_ts = np.asarray([[round_down(entry.ides_voxel_x[i]/drift_speed, kwds['fixed_step']) for i in entry_list]]).T
 
         rel_pos = np.concatenate( (smr_xs, rel_ys, rel_zs, smr_ts), axis=1 )
         rel_pos = [ds.LinkedList(ds.Node(data=x)) for x in rel_pos]
@@ -194,15 +327,17 @@ def drift(vfield, wfield, points, linspaces, geom, entry,
         batch = get_batch(use_this_batch)
 
         # do the stepping
-        batch.tips = do_batch_stepping(batch.tips, stepper=stepper, stopper=stopper, **kwds)
+        batch.tips, exclude = do_batch_stepping(batch.tips, stepper=stepper, stopper=stopper, **kwds)
         # do the induction
-        my_data = do_batch_induction(my_data, entry, batch.tips, batch.ids, vfield, wfield, linspaces, **kwds)
-
+        my_data = do_batch_induction(my_data, exclude, entry, batch.tips, batch.ids, vfield, wfield, linspaces, **kwds)
     print ''
     print len(my_data),'pixels collected charge'
-
-    make_waveforms(my_data)
+    make_waveforms(my_data, **kwds)
+    return my_data
      
+def analyze(my_data):
+    """Area to study waveforms."""
+    return
 
 def sim(vel, wfield, points, linspaces, geom, ntuple=None, **kwds):
     """This method will loop over the events in an ntuple.
@@ -216,7 +351,8 @@ def sim(vel, wfield, points, linspaces, geom, ntuple=None, **kwds):
     rtree = rfile.Get('myana/anatree')
     for entry in rtree:
         print 'drifting event',entry.event
-        drift(vel, wfield, points, linspaces, geom, entry, **kwds)
+        my_data = drift(vel, wfield, points, linspaces, geom, entry, **kwds)
+        analyze(my_data)
         break
 
 

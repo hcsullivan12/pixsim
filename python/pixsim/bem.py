@@ -1,6 +1,16 @@
+"""
+Access knobs and operators for BEM.
+"""
+
 import bempp.api
 
-def knobs(hmat_eps = None, hmat_mbs = None, gqo_near = None, gqo_medium = None, gqo_far = None, gqo_ds = None, **kwds):
+def knobs(hmat_eps=None,
+          hmat_mbs=None,
+          gqo_near=None,
+          gqo_medium=None,
+          gqo_far=None,
+          gqo_ds=None,
+          **kwds):
     '''
     Set the BEM++ knobs that can be set.  This returns filtered kwds
     and will fill in default values if they are not set.
@@ -21,40 +31,42 @@ def knobs(hmat_eps = None, hmat_mbs = None, gqo_near = None, gqo_medium = None, 
     @todo: add setting of distance scales.
     '''
     import bempp.api
-    q = bempp.api.global_parameters.quadrature
+    quad = bempp.api.global_parameters.quadrature
     if gqo_ds:
-        q.double_singular = gqo_ds
+        quad.double_singular = gqo_ds
     if gqo_near:
-        q.near.single_order = gqo_near
-        q.near.double_order = gqo_near
+        quad.near.single_order = gqo_near
+        quad.near.double_order = gqo_near
     if gqo_medium:
-        q.medium.single_order = gqo_medium
-        q.medium.double_order = gqo_medium
+        quad.medium.single_order = gqo_medium
+        quad.medium.double_order = gqo_medium
     if gqo_far:
-        q.far.single_order = gqo_far
-        q.far.double_order = gqo_far
+        quad.far.single_order = gqo_far
+        quad.far.double_order = gqo_far
 
-    h = bempp.api.global_parameters.hmat
+    hmat = bempp.api.global_parameters.hmat
     if hmat_eps:
-        h.eps = 1E-5
+        hmat.eps = 1E-5
     if hmat_mbs:
-        h.min_block_size = hmat_mbs
+        hmat.min_block_size = hmat_mbs
 
-    kwds['gqo_ds'] = q.double_singular
-    kwds['gqo_near'] = q.near.single_order
-    kwds['gqo_medium'] = q.medium.single_order
-    kwds['gqo_far'] = q.far.single_order
-    kwds['hmat_eps'] = h.eps
-    kwds['hmat_mbs'] = h.min_block_size
+    kwds['gqo_ds'] = quad.double_singular
+    kwds['gqo_near'] = quad.near.single_order
+    kwds['gqo_medium'] = quad.medium.single_order
+    kwds['gqo_far'] = quad.far.single_order
+    kwds['hmat_eps'] = hmat.eps
+    kwds['hmat_mbs'] = hmat.min_block_size
 
-    print 'Gaussian quadrature orders:',q.double_singular,q.near.single_order,q.medium.single_order,q.far.single_order
-    print 'HMAT eps/mbs:',h.eps, h.min_block_size
+    print 'Gaussian quadrature orders:', quad.double_singular, quad.near.single_order, quad.medium.single_order, quad.far.single_order
+    print 'HMAT eps/mbs:', hmat.eps, hmat.min_block_size
     return kwds
 
 def get_spaces(grid):
-    return bempp.api.function_space(grid, "P", 1), bempp.api.function_space(grid, "DP", 0), 
+    """Get BEM function spaces"""
+    return bempp.api.function_space(grid, "P", 1), bempp.api.function_space(grid, "DP", 0),
 
 def get_operators(grid):
+    """Get BEM operators"""
     piecewise_lin_space, piecewise_const_space = get_spaces(grid)
 
     identity = bempp.api.operators.boundary.sparse.identity(piecewise_lin_space, piecewise_lin_space, piecewise_const_space)
