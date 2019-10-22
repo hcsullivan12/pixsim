@@ -43,7 +43,7 @@ def save_raster_vtk(ses, outname, res_id):
 
     from tvtk.api import tvtk, write_data
 
-    for thing in ['scalar','gradient']:
+    for thing in ['pfield','efield']:
         values = arrs[thing]
         npoints = len(points)
 
@@ -56,7 +56,7 @@ def save_raster_vtk(ses, outname, res_id):
         cell_array.set_cells(point_type, cells)
 
         ug.set_cells(1, cell_array)
-        if thing == 'scalar':
+        if thing == 'pfield':
             ug.points = points
             ug.point_data.scalars = values.reshape(npoints)
             ug.point_data.scalars.name = thing

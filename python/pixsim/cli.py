@@ -87,7 +87,7 @@ def pythonify(id_range, total_ids):
     first_id = fst_lst[0]
     last_id = total_ids
     if we_got == 2:
-        last_id = se[-1]
+        last_id = fst_lst[-1]
         if last_id < 0:
             last_id = total_ids - abs(last_id) + 1
     if first_id > last_id:
@@ -277,7 +277,7 @@ def cmd_gen_vtx(ctx, source, geoconfig, name, dirname, dmap):
     0.75 0 0
     '''
     import pixsim.geometry as geometry
-    pixcoll = geometry.make_pixels(**ctx.obj['cfg'][geoconfig])
+    pixcoll = geometry.make_pixels_center(**ctx.obj['cfg'][geoconfig])
 
     do_domains, do_pos = list(), list()
     with open(source) as tmpfile:
@@ -631,7 +631,7 @@ def cmd_step(ctx, velocity, geoconfig, config, name):
 
     import pixsim.step as step
     import pixsim.geometry as geometry
-    pixcoll = geometry.make_pixels(**ctx.obj['cfg'][geoconfig])
+    pixcoll = geometry.make_pixels_center(**ctx.obj['cfg'][geoconfig])
     assert len(pixcoll) > 0
     arrays = step.step(vfield, linspace, pixcoll, **ctx.obj['cfg'][config])
     res = Result(name=name, typename='step', data=arrays, parent=vres)

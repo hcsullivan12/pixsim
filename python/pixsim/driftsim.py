@@ -79,6 +79,10 @@ def do_batch_stepping(tips, stepper=None, stopper=None, maxiter=300, fixed_step=
         points = np.asarray([x.head.data for x in tips])
         next_points = stepper(fixed_step, points)
         assert(len(points) == len(next_points))
+        p1 = points[0]
+        p2 = next_points[0]
+        diff = p1-p2
+        #print (diff[0]**2+diff[1]**2+diff[2]**2)**0.5
         
         # check for collision with pixels
         did_stop, exclude, tips = check_next(did_stop, exclude, tips, next_points, stopper)
@@ -135,7 +139,7 @@ def do_batch_induction(my_data, exclude, entry, tips, ids, vfield, wfield, linsp
             rm = new_ticks.pop()
             wvf = wvf[:-1]
 
-        wvf *= el / abs(fixed_step*np.sum(wvf)) # normalize to numElectrons
+        wvf *= -1 * el / abs(fixed_step*np.sum(wvf)) # normalize to numElectrons
         # add entry 
         if pid in my_data.keys():
             old_wvf = my_data[pid]
@@ -188,9 +192,10 @@ def make_rtds(my_data,
 
 def make_waveforms(my_data,
                    schmitt_time=0.02,
-                   threshold=1.0, # fC
-                   gain=0.1, # V/fC
-                   fixed_step=0.02,
+                   threshold=0.5, # fC
+                   gain=10., # V/fC
+                   fixed_step=0.05,
+                   noise=300, # electrons
                    **kwds):
     """Combine the contents of the data to
     form single waveforms for each pixel."""
@@ -198,15 +203,20 @@ def make_waveforms(my_data,
     pids = [p for p in my_data.keys()]
     base = int(str(fixed_step)[::-1].find('.'))
     tick_conversion = 10**base
+
+    # convert electrons to fC
+    noise *= 1.6 / 10000
+
     for p in pids:
         wvf = my_data[p]
         ts = sorted(wvf)
-        ys = [wvf[t] for t in ts]
+        ys = [wvf[t] + np.random.normal(0, noise) for t in ts]
+
         # appending extra zeros
         step_size = ts[1]-ts[0]
         to_append = [s for s in np.arange(ts[-1]+step_size, ts[-1]+50,step_size)]
         ts = np.append(ts, to_append)
-        ys = np.append(ys, [0]*len(to_append)) 
+        ys = np.append(ys, np.random.normal(0, noise, len(to_append))) 
 
         # integrate
         sch_data = {t:0 for t in np.arange(ts[0], ts[-1], 100*schmitt_time)}
@@ -286,7 +296,7 @@ def drift(vfield, wfield, points, linspaces, geom, entry,
             y_diff = smr_ys[count] - pix_ys[count]
             z_diff = smr_zs[count] - pix_zs[count]
             if abs(y_diff) > 1.0 or abs(z_diff) > 1.0:
-                print 'WARNING: Nasty Bug',y_diff,z_diff
+                print '\nWARNING: Nasty Bug',y_diff,z_diff
                 smr_ys[count] = pix_ys[count]
                 smr_zs[count] = pix_zs[count]
 
@@ -314,12 +324,13 @@ def drift(vfield, wfield, points, linspaces, geom, entry,
     random.shuffle(entries)
 
     batch_size = 100
+    total_batches = int(np.ceil(len(entries)/batch_size))+1
     for bid,index in enumerate(range(0,len(entries), batch_size),1):
         bck = index+batch_size
         if bck >= len(entries):
             bck = len(entries)-1
 
-        msg = 'Batch = '+str(bid)+' / '+str(np.ceil(len(entries)/batch_size))
+        msg = 'Batch = '+str(bid)+' / '+str(total_batches)
         sys.stdout.write("\r%s" % msg)
         sys.stdout.flush()
 
