@@ -76,57 +76,96 @@ def get_response(rel_pos, rsp_sp, rsp_ep, rsp_fn):
             nid = count
     return rsp_fn[nid], rsp_sp[nid], rsp_ep[nid]
 
-def calculate(entry, pixels_y, pixels_z, rsp_sp, rsp_ep, rsp_fn, backstep=1.0, **kwds):
+def get_rotation(x, y):
+    """Find rotation necessary to get to 1st quadrant"""
+    if x >= 0 and y >= 0:
+        return 0
+    elif x < 0 and y >= 0:
+        return 270
+    elif x < 0 and y < 0:
+        return 180
+    else:
+        return 90
+
+def rotate(x, y, theta):
+    """Rotate coordinates"""
+    c, s = np.cos(np.radians(theta)), np.sin(np.radians(theta))
+    return c*x - s*y, s*x + c*y
+
+def check_bipolar(pos0, pixels_y, pixels_z, pix_pos, rsp_sp, rsp_ep, rsp_fn):
+    """
+    Method to extract information about drift path.
+    """
+    # find rotation to get to 1st quadrant
+    rel_pos = [x-y for x, y in zip(pos0, pix_pos)]
+    rot_ang = get_rotation(rel_pos[2], rel_pos[1])
+    rot_rel_pos = list(rel_pos)
+    rot_rel_pos[2], rot_rel_pos[1] = rotate(rel_pos[2], rel_pos[1], rot_ang)
+    assert rot_rel_pos[1] >= 0 and rot_rel_pos[2] >= 0
+    print pos0, pix_pos, rot_rel_pos,
+    
+    # flip over y=z if necessary
+    did_flip = False
+    if rot_rel_pos[1] > rot_rel_pos[2]:
+        rot_rel_pos[1], rot_rel_pos[2] = rot_rel_pos[2], rot_rel_pos[1]
+        did_flip = True
+    
+    # find nearest response function and endpoints
+    resp, rel_sp, rel_ep = get_response(rot_rel_pos, rsp_sp, rsp_ep, rsp_fn)
+    
+    # convert ep back to global ep
+    ep = list(rel_ep)
+    if did_flip:
+        ep[1], ep[2] = ep[2], ep[1]
+    ep[2], ep[1] = rotate(ep[2], ep[1], -1*rot_ang)
+    ep = [x+y for x, y in zip(ep, pix_pos)]
+    
+    dist = distance2d(ep, pix_pos)
+    print dist, rel_sp
+    is_bip = False
+    if not is_accurate(dist):
+        is_bip = True
+
+    return is_bip, resp, ep, dist
+
+def calculate(entry, pixels_y, pixels_z, rsp_sp, rsp_ep, rsp_fn, **kwds):
     """
     Calculate waveforms for each charge cloud. 
     Convolves charge deposits with field/electronics
     response function.
 
-    Finds the nearest pixel to the drifted yz position 
-    and uses the relative position to that pixel to 
-    lookup a response function. 
+    We begin by guessing the nearest pixel to the drifted yz position.
+    Extract the drift information and if the result is bipolar, use
+    the end point to find the correct pixel, extract again.
     """
     chg_entries = len(entry.ides_y)
     for chg in range(0, chg_entries):
-        # getting charge location and pixel info
-        pos0 = np.asarray([backstep, entry.ides_y[chg], entry.ides_z[chg]])
+        # getting charge position
+        pos0 = np.asarray([0.0, entry.ides_y[chg], entry.ides_z[chg]])
+        
+        # we will first take nearest pixel
+        # if the result is bipolar, redo using correct pixel
         # ignoring charge that missed the pixel plane
         try:
             near_pix_id = nearest_pixel(pos0, pixels_y, pixels_z)
         except:
             continue
         pix_pos = pixel_position(near_pix_id, pixels_y, pixels_z)
+        is_bip, resp, ep, dist = check_bipolar(pos0, pixels_y, pixels_z, pix_pos, rsp_sp, rsp_ep, rsp_fn)
 
-        # convert relative pos to 1st quad and reflect over y=z if needed
-        did_flip = False
-        transf = [np.sign(x-y) for x, y in zip(pos0, pix_pos)]
-        rel_pos_abs = [abs(x-y) for x, y in zip(pos0, pix_pos)]
+        if is_bip:
+            try:
+                _temp = near_pix_id
+                near_pix_id = nearest_pixel(ep, pixels_y, pixels_z)
+                #print _temp, near_pix_id
+            except:
+                continue
+            pix_pos = pixel_position(near_pix_id, pixels_y, pixels_z)
+            is_bip, resp, ep, dist = check_bipolar(pos0, pixels_y, pixels_z, pix_pos, rsp_sp, rsp_ep, rsp_fn)
 
-        if rel_pos_abs[1] > rel_pos_abs[2]:
-            did_flip = True
-            temp = rel_pos_abs[1]
-            rel_pos_abs[1] = rel_pos_abs[2]
-            rel_pos_abs[2] = temp
-
-        # find nearest response function endpoints
-        resp, rel_sp, rel_ep = get_response(rel_pos_abs, rsp_sp, rsp_ep, rsp_fn)
-
-        # convert ep back to global ep
-        ep = rel_ep.copy()
-        if did_flip:
-            temp = ep[1]
-            ep[1] = ep[2]
-            ep[2] = temp
-        ep = [t*x+y for t, x, y in zip(transf, rel_ep, pix_pos)]
-
-        dist = distance2d(ep, pix_pos)
-        #print dist
-        is_bip = False
-        if not is_accurate(dist):
-            # this must be a bipolar response since the charge
-            # was not collected on the nearest pixel hypothesis
-            is_bip = True
-            print chg, 'IS BIPOLAR', dist
+        if is_bip:
+            print 'HUH!',chg, dist
+            break
 
 def get_pixels(entry):
     """Get pixel coordinates from ntuple"""
@@ -138,7 +177,6 @@ def get_pixels(entry):
     global _pixel_spacing, _eps
     _pixel_spacing = np.round(abs(pixels_y[1]-pixels_y[0]), 2)
     _eps = np.round(np.sqrt(2*(0.5*_pixel_spacing)**2), 2)
-    print _pixel_spacing, _eps
     return pixels_y, pixels_z
 
 def sim(response, ntuple=None, **kwds):
