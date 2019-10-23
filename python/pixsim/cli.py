@@ -193,9 +193,9 @@ def cmd_gen_dmap(ctx, config):
 @click.option('-c', '--config', default='weight', type=str, help='Section name in config file.')
 @click.option('-n', '--name', default='', type=str, help='Prefix for result names.')
 @click.option('-dm', '--dmap', default='domain_map', type=str, help='Name of domain map result.')
-@click.option('-r', '--exrad', default=0.7, type=float, help='Exclusion radius.')
+@click.argument('domains', nargs=-1)
 @click.pass_context
-def cmd_gen_weight(ctx, config, name, dmap, exrad):
+def cmd_gen_weight(ctx, config, name, dmap, domains):
     '''
     Generate weights. Used to generate the weighting fields
     for a collection of electrodes (gen weight). Expecting
@@ -210,7 +210,7 @@ def cmd_gen_weight(ctx, config, name, dmap, exrad):
     domap = gres.data[0].data
     for entry in domap:
         dom, elect, pos = entry[0], entry[1], entry[2]
-        if abs(pos[1]) > exrad or abs(pos[2]) > exrad:
+        if dom not in domains:
             continue
         par = ['weight:domain='+str(dom)]
 
@@ -433,6 +433,31 @@ def cmd_gen_current(ctx, config, name, raster, step):
         callit = name+'_waveforms_for_domain_'+domainid
         ctx.invoke(cmd_current, step=sres.id, raster=usethisras.id, config=config, name=callit)
 
+@cmd_gen.command("response")
+@click.option('-c', '--config', default='response', type=str, help='Section name in config.')
+@click.option('-n', '--name', default='response', type=str, help='Prefix for result names.')
+@click.option('-w', '--waveforms', required=True, type=int, help='Result ID of results to use.')
+@click.option('-s', '--step', required=True, type=int, help='Result ID of results to use.')
+@click.pass_context
+def cmd_gen_current(ctx, config, name, waveforms, step):
+    '''
+    Generate response.
+    '''
+    ses = ctx.obj['session']
+    curres = get_result(ses, id=waveforms)
+    if curres is None:
+        click.echo("No matching results for id = {}".format(waveforms))
+        return
+    stepres = get_result(ses, id=step)
+    if stepres is None:
+        click.echo("No matching results for id = {}".format(stepres))
+        return
+
+    import pixsim.response as rsp
+    arrays = rsp.response(stepres.data, curres.data, **ctx.obj['cfg'][config])
+    res = Result(name=name, typename='current', data=arrays, parent=curres)
+    save_result(ctx, res)
+
 ################################################################
 # Boundary
 @cli.command("boundary")
@@ -536,26 +561,28 @@ def cmd_plot_waveform(ctx, config, waveforms, name):
 ################################################################
 # Play area
 @cli.command("play")
-@click.option('-s', '--start', required=True, type=int, help='First waveform result id.')
-@click.option('-e', '--end', required=True, type=int, help='Last waveform result id.')
-@click.option('-c', '--config', default='plotting', help='Section name in config.')
+@click.option('-r', '--result_id', required=True, type=int, help='Result id.')
 @click.pass_context
-def cmd_play(ctx, start, end, config):
-    """Plotting results"""
+def cmd_play(ctx, result_id):
+    """Used for editing or experimenting"""
 
     ses = ctx.obj['session']
-    currid = start
-    result = get_result(ses, None, currid)
-    waveforms = list()
-    while result is not None and result.id <= end:
+    if result_id is not None:
+        result = get_result(ses, id=result_id)
+        if result is None:
+            click.echo("No matching result result_id = {}".format(result_id))
+            return
+        vtx_1, vtx_108 = None, None
         for arr in result.data:
-            waveforms.append(arr.data)
-        currid += 1
-        result = get_result(ses, None, currid)
-
-    import pixsim.plotting as plt
-    plt.plot_waveforms(waveforms, **ctx.obj['cfg'][config])
-    return
+            if 'vtx1' in arr.name:
+                vtx_1 = arr.data
+            if 'vtx108' in arr.name:
+                vtx_108 = arr.data
+        assert vtx_1 is not None and vtx_108 is not None
+        print vtx_108
+        #arr.name = name
+        #ses.add(result)
+        #ses.commit()
 
 ################################################################
 # Raster
@@ -733,28 +760,29 @@ def cmd_rm(ctx):
     """Entry point into removing items from store."""
     return
 
-def do_removal(ses, objid, id_range, flv):
+def do_removal(ses, id_range, flv):
     """Wrapper for removing arrays/results.
     Note: If deleting results, associated arrays
     will be deleted as well."""
 
     from pixsim.store import get_last_ids
     total_ids = get_last_ids(ses)[flv]
+
     getmth = eval('get_'+str(flv))
 
     def rm_arrs(ses, arrs):
         for arr in arrs:
             ses.delete(arr)
 
-    if objid is not None:
+    if ':' not in id_range:
+        objid = int(id_range)
         if objid < 0:
             objid = total_ids - abs(objid) + 1
         obj = getmth(ses, id=objid)
         if obj is None:
             click.echo("No matching {} for id = {}".format(flv, objid))
             return
-        do_it = click.prompt("Remove {} {}? (y/n)".format(flv, objid), default='y')
-        if 'y' == do_it:
+        if click.confirm("Remove {} {}?".format(flv, objid)):
             click.echo("Removing %s %d %s %s" % (flv, obj.id, obj.name, obj.typename))
             # if this is a result obj, remove the arrays as well
             if flv == 'result':
@@ -763,15 +791,12 @@ def do_removal(ses, objid, id_range, flv):
             update_ses(ses)
         else:
             click.echo("Not removing {}s".format(flv))
-        return
-
-    if id_range is not None:
+    elif id_range is not None:
         first_id, last_id, we_got = pythonify(id_range, total_ids)
         if we_got is None:
             return
 
-        do_it = click.prompt("Remove {}s {} through {}? (y/n)".format(flv, first_id, last_id), default='y')
-        if 'y' == do_it:
+        if click.confirm("Remove {}s {} through {}?".format(flv, first_id, last_id)):
             currid = first_id
             obj = getmth(ses, id=currid)
             while obj is not None and obj.id <= last_id:
@@ -787,44 +812,35 @@ def do_removal(ses, objid, id_range, flv):
             return
         else:
             click.echo("Not removing {}s".format(flv))
-            return
 
 @cmd_rm.command('array')
-@click.option('-i', '--array_id', type=int, default=None,
-              help='Array id to delete. \n\
-              Ex. \n\
-              -i 5 deletes id 5. \n\
-              -i -2 deletes second to last id.')
 @click.option('-r', '--id_range', type=str, default=None,
               help='Range of ids to delete. \n\
               Ex. \n\
               -r 2:6 deletes ids ranging from 2 to and including 6.\n\
-              -r 2: or 2:-1 deletes ids ranging from 2 to the end.')
+              -r 2: or 2:-1 deletes ids ranging from 2 to the end.\n\
+              -r 2 deletes id = 2')
 @click.pass_context
-def cmd_rm_array(ctx, array_id, id_range):
+def cmd_rm_array(ctx, id_range):
     """Remove arrays from the store. Tread lightly!"""
 
     ses = ctx.obj['session']
-    do_removal(ses, array_id, id_range, 'array')
+    do_removal(ses, id_range, 'array')
 
 @cmd_rm.command('result')
-@click.option("-i", "--result_id", type=int, default=None,
-              help="Result id to delete. \n\
-              Ex. \n\
-              -i 5 deletes id 5. \n\
-              -i -2 deletes second to last id.")
 @click.option("-r", "--id_range", type=str, default=None,
               help="Range of ids to delete. \n\
               Ex. \n\
               -r 2:6 deletes ids ranging from 2 to and including 6.\n\
-              -r 2: or 2:-1 deletes ids ranging from 2 to the end.")
+              -r 2: or 2:-1 deletes ids ranging from 2 to the end.\n\
+              -r 2 deletes id = 2")
 @click.pass_context
-def cmd_rm_result(ctx, result_id, id_range):
+def cmd_rm_result(ctx, id_range):
     '''
     Remove results from the store. Tread lightly!
     '''
     ses = ctx.obj['session']
-    do_removal(ses, result_id, id_range, 'result')
+    do_removal(ses, id_range, 'result')
 
 ################################################################
 # Rename
