@@ -723,34 +723,20 @@ def cmd_average(ctx, name, waveforms):
 ################################################################
 # Sim
 @cli.command("sim")
-@click.option('-v', '--velocity', default='velocity', type=str, help='Velocity results (name or ID).')
-@click.option('-w', '--weight', default='weighting_raster', type=str, help='Weight raster results (name or ID).')
+@click.option('-r', '--response', default='response', type=str, help='Response results (name or ID).')
 @click.option('-c', '--config', default='sim', type=str, help='Section name in config.')
 @click.pass_context
-def cmd_sim(ctx, velocity, weight, config):
-    """Integrate drift sim."""
+def cmd_sim(ctx, response, config):
+    """Entry to drift sim."""
 
     ses = ctx.obj['session']
-    vres = get_result(ses, source=velocity)
-    if vres is None:
-        click.echo("No matching results for name = {}".format(velocity))
+    rres = get_result(ses, source=response)
+    if rres is None:
+        click.echo("No matching results for name = {}".format(response))
         return
-    rasres = get_result(ses, source=weight)
-    if rasres is None:
-        click.echo("No matching results for name = {}".format(weight))
-        return
-
-    vel = find_data(vres, ['vector'])
-    wfield, points, linspaces = find_data(rasres, ['vector', 'points', 'linspace'])
-
-    import pixsim.geometry as geometry
-    geomsec = ctx.obj['cfg'][config]['geometry']
-    pixcoll = geometry.make_pixels_center(**ctx.obj['cfg'][geomsec])
-    assert len(pixcoll) > 0
 
     import pixsim.driftsim as dsim
-    dsim.sim(vel, wfield, points, linspaces, pixcoll, **ctx.obj['cfg'][config])
-
+    dsim.sim(rres, **ctx.obj['cfg'][config])
 
 ################################################################
 # Removal
