@@ -31,10 +31,12 @@ def response(steps, waveforms, gain=14.0, shape_time=1.0, **kwds):
     ts = [n for n in np.arange(step, 5*tP, step)]
     ys = [sp.functions.re(sol.subs(t, tick)) for tick in ts]
 
-    start, end, arrays = list(), list(), list()
     steps = [s for s in steps if s.name != 'vtxs']
     assert len(steps) == len(waveforms)
     
+    start = [None for s in steps]
+    end, arrays = list(start), list(start)
+    count = 0
     for step, wvf in zip(steps, waveforms):
         if step.name == 'vtxs':
             continue
@@ -51,9 +53,10 @@ def response(steps, waveforms, gain=14.0, shape_time=1.0, **kwds):
         conv = sp.convolution(wvf, ys, dps=2)
         conv = np.asarray([sp.functions.re(x) for x in conv])
 
-        start.append(step.data[0,0:3])
-        end.append(step.data[-1,0:3])
-        arrays.append(conv)
+        start[count] = step.data[0,0:3]
+        end[count] = step.data[-1,0:3]
+        arrays[count] = conv
+        count += 1
 
     return [Array(name='start_points', typename='tuples', data=np.asarray(start)),
             Array(name='end_points', typename='tuples', data=np.asarray(end)),
