@@ -76,7 +76,7 @@ def get_response(rel_pos, rsp_data):
             dist = distance2d(rel_pos, [0,y,z])
             if dist < mxm:
                 mxm = dist
-                ret_fn, ret_ep = sat['rsp'], sat['ep']
+                ret_fn, ret_ep = {'rsp':sat['rsp'], 'area':sat['area'], 'max':sat['max']}, sat['ep']
     return ret_fn, ret_ep
 
 def get_rotation(x, y):
@@ -129,20 +129,62 @@ def check_bipolar(pos0, pixels_y, pixels_z, pix_pos, rsp_data):
 
     return is_bip, resp, ep, dist
 
-def calculate(entry, pixels_y, pixels_z, rsp_data):
+def plot(wvfs, threshold=0.7, sch_time=0.02):
+    import matplotlib.pyplot as plt
+    for pid, wvf in wvfs.iteritems():
+        ts = wvf.keys()
+        ts.sort()
+        ys = [wvf[t] for t in ts]
+
+        #integrate
+        ys_int, ys_sch = list(ys), [0]*len(ys)
+        sch_hits = list()
+        charge = 0 
+        for tbin in range(0, len(ys_int)):
+            charge += ys[tbin] * sch_time
+            if charge > threshold:
+                charge = 0
+                ys_sch[tbin] = 1.0
+                sch_hits.append(ts[tbin])
+            ys_int[tbin] = charge
+
+        # reconstructing
+        reco_data = {t:0 for t in ts}
+        for tbin in range(1, len(sch_hits)):
+            pre_time = sch_hits[tbin-1] 
+            cur_time = sch_hits[tbin] 
+            delta_t = cur_time-pre_time
+            #print pre_time, cur_time, delta_t
+            for tick in np.arange(pre_time, cur_time, int(100*sch_time)):
+                reco_data[tick] = 100. * threshold / delta_t 
+
+        reco_ys = [reco_data[t] for t in ts]
+
+        fig, (ax1, ax2) = plt.subplots(2, sharex=True, figsize=(15, 15))
+        ts = [t/100. for t in ts]
+        ax2.step(ts, ys)
+        ax2.step(ts, reco_ys)
+        ax1.step(ts, ys_int)
+        ax1.step(ts, ys_sch)
+        #ax2.set_ylim([0,3.5])
+        plt.show()
+
+def fill_map(entry, pixels_y, pixels_z, rsp_data):
     """
-    Calculate waveforms for each charge cloud. 
-    Convolves charge deposits with field/electronics
-    response function.
+    Fill pixel to waveform map.
 
     We begin by guessing the nearest pixel to the drifted yz position.
     Extract the drift information and if the result is bipolar, use
     the end point to find the correct pixel, extract again.
     """
+
+    pid_to_wvf = dict()
     chg_entries = len(entry.ides_y)
     for chg in range(0, chg_entries):
         # getting charge position
         pos0 = np.asarray([0.0, entry.ides_y[chg], entry.ides_z[chg]])
+        time_tick = entry.ides_voxel_x[chg]/0.1648 # convert to us
+        numEl = entry.ides_numElectrons[chg]
         
         # we will first take nearest pixel
         # if the result is bipolar, redo using correct pixel
@@ -168,7 +210,69 @@ def calculate(entry, pixels_y, pixels_z, rsp_data):
 
         # we have pid, unipolar rsp, chg tick
         print resp
-        break
+        to_store = {'el':numEl, 'rsp':resp['rsp'], 'area':resp['area'], 't':time_tick, 'max':resp['max']} 
+        if near_pix_id not in pid_to_wvf.keys():
+            pid_to_wvf[near_pix_id] = [to_store]
+        else:
+            pid_to_wvf[near_pix_id].append(to_store)
+    return pid_to_wvf
+
+def calculate(entry, pixels_y, pixels_z, rsp_data, rsp_time_bin=0.02):
+    """
+    Calculate waveforms for each charge cloud. 
+    Convolves charge deposits with field/electronics
+    response function.
+    """
+
+    pid_to_wvf = fill_map(entry, pixels_y, pixels_z, rsp_data)
+
+    # convolve
+    pid_count = 0
+    for pid, dlist in pid_to_wvf.iteritems():
+        pid_count += 1
+        print 'Convolve', pid_count, '/', len(pid_to_wvf)
+
+        if len(dlist) < 25:
+            continue
+
+        dlist.sort(key=lambda x: x['t'])
+        for store in dlist:
+            nel = store['el']
+            area = rsp_time_bin * store['area']
+            store['rsp'] *= nel * 1.6 / (10000 * area * rsp_time_bin)
+
+    base = int(100 * rsp_time_bin)
+    def round_it(x, base=base):
+        return int(base * np.floor(float(x)/base))
+
+    # make waveform
+    pid_count = 0
+    wvfs = dict()
+    for pid, dlist in pid_to_wvf.iteritems():
+        pid_count += 1
+        wvf = dict()
+        print 'Waveform', pid_count, '/', len(pid_to_wvf)
+
+        if len(dlist) < 25:
+            continue
+
+        for store in dlist:
+            # start time
+            tick = 100 * (store['t'] - rsp_time_bin * (store['max'] + 1))
+            tick = round_it(tick)
+            print store
+
+            for tbin in range(0, len(store['rsp'])):
+                if tick not in wvf:
+                    wvf[tick] = store['rsp'][tbin]
+                else:
+                    wvf[tick] += store['rsp'][tbin]
+                tick += 100 * rsp_time_bin 
+                tick = round_it(tick)
+                #print store['rsp'][tbin]
+        wvfs[pid] = wvf
+        
+    plot(wvfs)
 
 def get_pixels(entry):
     """Get pixel coordinates from ntuple"""
@@ -197,7 +301,8 @@ def prepare_data(response):
     rsp_data = dict()
     for sp, ep, fn in zip(rsp_sp, rsp_ep, rsp_fn):
         sy, sz = sp[1], sp[2]
-        sat_data = {'ep':ep, 'rsp':fn}
+        sat_data = {'ep':ep, 'rsp':fn, 'area':np.sum(fn), 'max':np.argmax(fn)}
+
 
         if sz not in rsp_data.keys():
             rsp_data[sz] = {sy:sat_data}
