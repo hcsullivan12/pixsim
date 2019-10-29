@@ -3,13 +3,15 @@ import numpy as np
 import sympy as sp
 from bisect import bisect_left
 from sets import Set
+import sys
 
 # default settings, will detect spacing later
 _pixel_spacing = 0.4
 _eps = np.round(np.sqrt(2*(0.5*_pixel_spacing)**2), 2)
 _step_zs, _step_ys = Set(), dict()
 
-_hDiffusion = ROOT.TH2D('_hDiffusion', '_hDiffusion', 50, 0, 50, 400, 0, 400)
+_hDiffusion1 = ROOT.TH2D('_hDiffusion1', '_hDiffusion1', 400, 0, 400, 20, 0, 20)
+_hDiffusion2 = ROOT.TH2D('_hDiffusion2', '_hDiffusion2', 50, 0, 50, 400, 0, 400)
 
 def is_accurate(dist, eps=_eps):
     """Check against largest distance from pixel center"""
@@ -105,7 +107,11 @@ def check_bipolar(pos0, pixels_y, pixels_z, pix_pos, rsp_data):
     rot_ang = get_rotation(rel_pos[2], rel_pos[1])
     rot_rel_pos = list(rel_pos)
     rot_rel_pos[2], rot_rel_pos[1] = rotate(rel_pos[2], rel_pos[1], rot_ang)
-    assert rot_rel_pos[1] >= 0 and rot_rel_pos[2] >= 0
+    if abs(rot_rel_pos[1]) < 0.0001:
+        rot_rel_pos[1] = 0.0
+    if abs(rot_rel_pos[2]) < 0.0001:
+        rot_rel_pos[2] = 0.0
+    assert rot_rel_pos[1] >= 0 and rot_rel_pos[2] >= 0, 'Relative positions = '+str(rot_rel_pos[1])+' '+str(rot_rel_pos[2])
     
     # flip over y=z if necessary
     did_flip = False
@@ -146,7 +152,7 @@ def integrate_waveform(ts, ys, threshold=0.7, sch_time=0.02):
     
     return ys_int, ys_sch, sch_hits
 
-def reconstruct(sch_hits, sch_time=0.02):
+def reconstruct(ts, sch_hits, threshold=0.7, sch_time=0.02):
     """Reconstruct waveform from resets"""
 
     reco_data = {t:0 for t in ts}
@@ -162,7 +168,7 @@ def reconstruct(sch_hits, sch_time=0.02):
 def analyze(wvfs):
     """Area for analysis"""
     import matplotlib.pyplot as plt
-    global _hDiffusion
+    global _hDiffusion1, _hDiffusion2
     
     for pid, wvf in wvfs.iteritems():
         ts = wvf.keys()
@@ -173,39 +179,63 @@ def analyze(wvfs):
         if len(sch_hits) < 2:
             continue
         
-        #reco_data = reconstruct(sch_hits) 
-        #reco_ys = [reco_data[t] for t in ts]
+        reco_data = reconstruct(ts, sch_hits) 
+        reco_ys = [reco_data[t] for t in ts]
 
         sch_hits.sort()
+
+        #for hit in range(1, len(sch_hits)):
+        #    tdiff = (sch_hits[hit] - sch_hits[hit-1]) / 100
+        #    xpos = 0.1648 * (sch_hits[hit] / 100)
+        #    _hDiffusion2.Fill(tdiff, xpos)
+
+        ts = [t/100. for t in ts]
+        thst = ROOT.TH1F('thst'+str(pid), 'thst'+(pid), len(ts), ts[0], ts[-1])
+        max_amp = -1
+        max_amp_bin = -1
+
+        for hbin in range(0, len(reco_ys)):
+            thst.SetBinContent(hbin+1, ys[hbin])
+            if reco_ys[hbin] > max_amp:
+                max_amp = reco_ys[hbin]
+                max_amp_bin = hbin
+
         time_diff = (sch_hits[-1] - sch_hits[0]) / 100
-        xpos = (sch_hits[0]/100 + 0.5 * time_diff) * 0.1648
+        fit = ROOT.TF1('fit'+str(pid), 'gaus', ts[0], ts[-1])
+        fit.SetParameter(0, max_amp)
+        fit.SetParameter(1, ts[max_amp_bin])
+        fit.SetParameter(2, 0.25*time_diff)
 
-        _hDiffusion.Fill(time_diff, xpos)
+        thst.Fit(fit, 'QRN')
+        _hDiffusion1.Fill(fit.GetParameter(1), np.power(fit.GetParameter(2), 2.))
+        #plt.step(ts, ys)
+        #plt.step(ts, reco_ys)
+        #plt.plot(ts, fit.GetParameter(0)*np.exp(-np.power(np.asarray(ts) - fit.GetParameter(1), 2.) / (2 * np.power(fit.GetParameter(2), 2.))))
+        #plt.show()
 
-        #_xs.append(time_diff)
-        #_ys.append(xpos)
+def best_fit(X, Y):
+    """Not used"""
+
+    xbar = sum(X)/len(X)
+    ybar = sum(Y)/len(Y)
+    n = len(X) # or len(Y)
     
-    #def best_fit(X, Y):
-        #xbar = sum(X)/len(X)
-        #ybar = sum(Y)/len(Y)
-        #n = len(X) # or len(Y)
-        #
-        #numer = sum([xi*yi for xi,yi in zip(X, Y)]) - n * xbar * ybar
-        #denum = sum([xi**2 for xi in X]) - n * xbar**2
-        #
-        #b = numer / denum
-        #a = ybar - b * xbar
-        #
-        #print('best fit line:\ny = {:.2f} + {:.2f}x'.format(a, b))
-        #
-        #return a, b
-    #
-    #a, b = best_fit(_xs, _ys)
-    #
-    #yfit = [a + b * xi for xi in _xs]
-    #plt.scatter(_xs, _ys)
-    #plt.plot(_xs, yfit)
-    #plt.show()
+    numer = sum([xi*yi for xi,yi in zip(X, Y)]) - n * xbar * ybar
+    denum = sum([xi**2 for xi in X]) - n * xbar**2
+    
+    b = numer / denum
+    a = ybar - b * xbar
+    
+    print('best fit line:\ny = {:.2f} + {:.2f}x'.format(a, b))
+    
+    return a, b
+        
+    a, b = best_fit(_xs, _ys)
+
+    yfit = [a + b * xi for xi in _xs]
+    plt.scatter(_xs, _ys)
+    plt.plot(_xs, yfit)
+    plt.show()
 
 def plot(wvfs):
     import matplotlib.pyplot as plt
@@ -216,7 +246,7 @@ def plot(wvfs):
 
         ys_int, ys_sch, sch_hits = integrate_waveform(ts, ys) 
         
-        reco_data = reconstruct(sch_hits) 
+        reco_data = reconstruct(ts, sch_hits) 
         reco_ys = [reco_data[t] for t in ts]
 
         fig, (ax1, ax2) = plt.subplots(2, sharex=True, figsize=(15, 15))
@@ -283,8 +313,14 @@ def convolve(pid_to_wvf, rsp_time_bin=0.02):
 
     to_fC_convers = 1.6 / 10000
 
-    print 'Convolving...'
+    pid_count = 0
+    tot_pid_count = len(pid_to_wvf)
     for pid, dlist in pid_to_wvf.iteritems():
+        pid_count += 1
+        msg = 'Convolving '+str(pid_count)+' / '+str(tot_pid_count)
+        sys.stdout.write("\r%s" % msg)
+        sys.stdout.flush()
+
         dlist.sort(key=lambda x: x['t'])
 
         for store in dlist:
@@ -292,6 +328,7 @@ def convolve(pid_to_wvf, rsp_time_bin=0.02):
             chg_in_fC = store['el'] * to_fC_convers
             store['rsp_convolved'] = store['rsp'] * chg_in_fC / rsp_area
 
+    print ''
     return pid_to_wvf
 
 def make_waveforms(pid_to_wvf, rsp_time_bin=0.02):
@@ -303,8 +340,14 @@ def make_waveforms(pid_to_wvf, rsp_time_bin=0.02):
 
     wvfs = dict()
 
-    print 'Making waveforms...'
+    pid_count = 0
+    tot_pid_count = len(pid_to_wvf)
     for pid, dlist in pid_to_wvf.iteritems():
+        pid_count += 1
+        msg = 'Constructing '+str(pid_count)+' / '+str(tot_pid_count)
+        sys.stdout.write("\r%s" % msg)
+        sys.stdout.flush()
+
         wvf = dict()
         
         for store in dlist:
@@ -322,6 +365,7 @@ def make_waveforms(pid_to_wvf, rsp_time_bin=0.02):
 
         wvfs[pid] = wvf
 
+    print ''
     return wvfs
 
 def calculate(entry, pixels_y, pixels_z, rsp_data):
@@ -398,7 +442,9 @@ def sim(response, ntuple=None, **kwds):
     for entry in rtree:
         print 'drifting event', entry.event
         calculate(entry, pixels_y, pixels_z, rsp_data)
+        #break
 
-    _canvas = ROOT.TCanvas('_canvas', '_canvas', 800, 800)
-    _hDiffusion.Draw('colz')
+    _canvas1 = ROOT.TCanvas('_canvas1', '_canvas1', 800, 800)
+    _hDiffusion1.Draw('colz')
+    
     wait = input()

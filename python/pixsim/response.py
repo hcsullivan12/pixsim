@@ -7,6 +7,7 @@ from pixsim.current import do_norm
 from pixsim.models import Array
 
 def response(steps, waveforms, gain=14.0, shape_time=1.0, **kwds):
+    print shape_time
     if len(waveforms) == 0:
         return list()
 
