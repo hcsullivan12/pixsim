@@ -14,6 +14,8 @@ What this package can do:
 
 This package is a command-line tool that has seperate commands for each stage of the simulation. Data from each result is persisted in a database that gets updated at the end of each stage and can be referenced by name or ID in subsequent stages. 
 
+See [driftsim](https://github.com/hcsullivan12/pixsim/README/DRIFT_SIM.md) for details on integrating with a drift simulation.
+
 ![alt text](https://raw.githubusercontent.com/hcsullivan12/picture_store/master/steps2.png "Steps")
 
 
