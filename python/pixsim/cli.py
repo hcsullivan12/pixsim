@@ -25,8 +25,8 @@ def save_result(ctx, results):
                        (result.typename, result.name, len(result.data)))
             for typ, nam, arr in result.triplets():
                 click.echo("\tarray typename:%s name:%s shape:%s" % (typ, nam, arr.shape))
-            click.echo("Parameters:")
-            click.echo(pprint.pformat(result.params))
+            #click.echo("Parameters:")
+            #click.echo(pprint.pformat(result.params))
             raise
         ses.commit()
         click.echo('id:%d typename:%s name:%s narrays:%d' % (result.id, result.typename, result.name, len(result.data)))
@@ -736,7 +736,28 @@ def cmd_sim(ctx, response, config):
         return
 
     import pixsim.driftsim as dsim
-    dsim.sim(rres, **ctx.obj['cfg'][config])
+    arrs = dsim.sim(rres, **ctx.obj['cfg'][config])
+    res = Result(name='simwaveforms', typename='current', data=arrs)
+    save_result(ctx, res)
+
+################################################################
+# Ana
+@cli.command("ana")
+@click.option('-r', '--result', default='simwaveforms', type=str, help='Response results (name or ID).')
+@click.pass_context
+def cmd_ana(ctx, result):
+    """Entry to drift sim."""
+
+    ses = ctx.obj['session']
+    click.echo("Loading data...")
+    res = get_result(ses, source=result)
+    if res is None:
+        click.echo("No matching results for name = {}".format(result))
+        return
+
+    import pixsim.analyze as ana
+    ana.analyze(res)
+
 
 ################################################################
 # Removal

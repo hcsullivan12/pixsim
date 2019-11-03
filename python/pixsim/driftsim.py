@@ -4,14 +4,14 @@ import sympy as sp
 from bisect import bisect_left
 from sets import Set
 import sys
+from pixsim.models import Array
 
-# default settings, will detect spacing later
+# default settings, will detect later
 _pixel_spacing = 0.4
 _eps = np.round(np.sqrt(2*(0.5*_pixel_spacing)**2), 2)
 _step_zs, _step_ys = Set(), dict()
-
-_hDiffusion1 = ROOT.TH2D('_hDiffusion1', '_hDiffusion1', 400, 0, 400, 20, 0, 20)
-_hDiffusion2 = ROOT.TH2D('_hDiffusion2', '_hDiffusion2', 50, 0, 50, 400, 0, 400)
+_step_conversion = 0
+_fixed_step = 0
 
 def is_accurate(dist, eps=_eps):
     """Check against largest distance from pixel center"""
@@ -136,131 +136,6 @@ def check_bipolar(pos0, pixels_y, pixels_z, pix_pos, rsp_data):
 
     return is_bip, resp, ep, dist
 
-def integrate_waveform(ts, ys, threshold=0.7, sch_time=0.02):
-    """Integrate waveform and handle resets"""
-
-    ys_int, ys_sch, sch_hits = list(ys), list(ys), list()
-    charge = 0 
-
-    for tbin in range(0, len(ys_int)):
-        charge += ys[tbin] * sch_time
-        if charge > threshold:
-            charge = 0
-            ys_sch[tbin] = 1.0
-            sch_hits.append(ts[tbin])
-        ys_int[tbin] = charge
-    
-    return ys_int, ys_sch, sch_hits
-
-def reconstruct(ts, sch_hits, threshold=0.7, sch_time=0.02):
-    """Reconstruct waveform from resets"""
-
-    reco_data = {t:0 for t in ts}
-    for tbin in range(1, len(sch_hits)):
-        pre_time = sch_hits[tbin-1] 
-        cur_time = sch_hits[tbin] 
-        delta_t = cur_time-pre_time
-        for tick in np.arange(pre_time, cur_time, int(100*sch_time)):
-            reco_data[tick] = 100. * threshold / delta_t
-    
-    return reco_data
-
-def analyze(wvfs):
-    """Area for analysis"""
-    import matplotlib.pyplot as plt
-    global _hDiffusion1, _hDiffusion2
-    
-    for pid, wvf in wvfs.iteritems():
-        ts = wvf.keys()
-        ts.sort()
-        ys = [wvf[t] for t in ts]
-
-        ys_int, ys_sch, sch_hits = integrate_waveform(ts, ys)
-        if len(sch_hits) < 2:
-            continue
-        
-        reco_data = reconstruct(ts, sch_hits) 
-        reco_ys = [reco_data[t] for t in ts]
-
-        sch_hits.sort()
-
-        #for hit in range(1, len(sch_hits)):
-        #    tdiff = (sch_hits[hit] - sch_hits[hit-1]) / 100
-        #    xpos = 0.1648 * (sch_hits[hit] / 100)
-        #    _hDiffusion2.Fill(tdiff, xpos)
-
-        ts = [t/100. for t in ts]
-        thst = ROOT.TH1F('thst'+str(pid), 'thst'+(pid), len(ts), ts[0], ts[-1])
-        max_amp = -1
-        max_amp_bin = -1
-
-        for hbin in range(0, len(reco_ys)):
-            thst.SetBinContent(hbin+1, ys[hbin])
-            if reco_ys[hbin] > max_amp:
-                max_amp = reco_ys[hbin]
-                max_amp_bin = hbin
-
-        time_diff = (sch_hits[-1] - sch_hits[0]) / 100
-        fit = ROOT.TF1('fit'+str(pid), 'gaus', ts[0], ts[-1])
-        fit.SetParameter(0, max_amp)
-        fit.SetParameter(1, ts[max_amp_bin])
-        fit.SetParameter(2, 0.25*time_diff)
-
-        thst.Fit(fit, 'QRN')
-        _hDiffusion1.Fill(fit.GetParameter(1), np.power(fit.GetParameter(2), 2.))
-        #plt.step(ts, ys)
-        #plt.step(ts, reco_ys)
-        #plt.plot(ts, fit.GetParameter(0)*np.exp(-np.power(np.asarray(ts) - fit.GetParameter(1), 2.) / (2 * np.power(fit.GetParameter(2), 2.))))
-        #plt.show()
-
-def best_fit(X, Y):
-    """Not used"""
-
-    xbar = sum(X)/len(X)
-    ybar = sum(Y)/len(Y)
-    n = len(X) # or len(Y)
-    
-    numer = sum([xi*yi for xi,yi in zip(X, Y)]) - n * xbar * ybar
-    denum = sum([xi**2 for xi in X]) - n * xbar**2
-    
-    b = numer / denum
-    a = ybar - b * xbar
-    
-    print('best fit line:\ny = {:.2f} + {:.2f}x'.format(a, b))
-    
-    return a, b
-        
-    a, b = best_fit(_xs, _ys)
-
-    yfit = [a + b * xi for xi in _xs]
-    plt.scatter(_xs, _ys)
-    plt.plot(_xs, yfit)
-    plt.show()
-
-def plot(wvfs):
-    import matplotlib.pyplot as plt
-    for pid, wvf in wvfs.iteritems():
-        ts = wvf.keys()
-        ts.sort()
-        ys = [wvf[t] for t in ts]
-
-        ys_int, ys_sch, sch_hits = integrate_waveform(ts, ys) 
-        
-        reco_data = reconstruct(ts, sch_hits) 
-        reco_ys = [reco_data[t] for t in ts]
-
-        fig, (ax1, ax2) = plt.subplots(2, sharex=True, figsize=(15, 15))
-        ts = [t/100. for t in ts]
-        ax2.step(ts, ys)
-        ax2.step(ts, reco_ys)
-        ax1.step(ts, ys_int)
-        ax1.step(ts, ys_sch)
-        plt.xlabel('Time [us]',fontsize=15)
-        ax2.set_ylabel('Current [nA]',fontsize=15)
-        ax1.set_ylabel('Voltage [V]',fontsize=15)
-        #ax2.set_ylim([0,3.5])
-        plt.show()
-
 def fill_map(entry, pixels_y, pixels_z, rsp_data):
     """
     Fill pixel to waveform map.
@@ -268,6 +143,11 @@ def fill_map(entry, pixels_y, pixels_z, rsp_data):
     We begin by guessing the nearest pixel to the drifted yz position.
     Extract the drift information and if the result is bipolar, use
     the end point to find the correct pixel, extract again.
+
+    @note This assumes variable names in the tree.
+
+    ides_y and ides_z are the smeared yz coordinates of the charge clouds
+    ides_voxel_x are the smeared x coordinates of the charge clouds
     """
 
     pid_to_wvf = dict()
@@ -308,9 +188,10 @@ def fill_map(entry, pixels_y, pixels_z, rsp_data):
             pid_to_wvf[near_pix_id].append(to_store)
     return pid_to_wvf
 
-def convolve(pid_to_wvf, rsp_time_bin=0.02):
+def convolve(pid_to_wvf):
     """Perform convolution of charge deposits and response function"""
 
+    global _fixed_step
     to_fC_convers = 1.6 / 10000
 
     pid_count = 0
@@ -324,17 +205,19 @@ def convolve(pid_to_wvf, rsp_time_bin=0.02):
         dlist.sort(key=lambda x: x['t'])
 
         for store in dlist:
-            rsp_area = store['area'] * rsp_time_bin
+            rsp_area = store['area'] * _fixed_step
             chg_in_fC = store['el'] * to_fC_convers
             store['rsp_convolved'] = store['rsp'] * chg_in_fC / rsp_area
 
     print ''
     return pid_to_wvf
 
-def make_waveforms(pid_to_wvf, rsp_time_bin=0.02):
+def make_waveforms(pid_to_wvf):
     """Construct waveforms by taking superposition of responses"""
 
-    base = int(100 * rsp_time_bin)
+    global _fixed_step, _step_conversion
+
+    base = int(_step_conversion * _fixed_step)
     def round_it(x, base=base):
         return int(base * np.floor(float(x)/base))
 
@@ -352,7 +235,7 @@ def make_waveforms(pid_to_wvf, rsp_time_bin=0.02):
         
         for store in dlist:
             # start time
-            tick = 100 * (store['t'] - rsp_time_bin * (store['max'] + 1))
+            tick = _step_conversion * (store['t'] - _fixed_step * (store['max'] + 1))
             tick = round_it(tick)
             
             for tbin in range(0, len(store['rsp_convolved'])):
@@ -360,7 +243,7 @@ def make_waveforms(pid_to_wvf, rsp_time_bin=0.02):
                     wvf[tick] = store['rsp_convolved'][tbin]
                 else:
                     wvf[tick] += store['rsp_convolved'][tbin]
-                tick += 100 * rsp_time_bin 
+                tick += _step_conversion * _fixed_step 
                 tick = round_it(tick)
 
         wvfs[pid] = wvf
@@ -377,8 +260,7 @@ def calculate(entry, pixels_y, pixels_z, rsp_data):
     pid_to_wvf = fill_map(entry, pixels_y, pixels_z, rsp_data)
     pid_to_wvf = convolve(pid_to_wvf)
     wvfs = make_waveforms(pid_to_wvf)
-    #plot(wvfs)
-    analyze(wvfs)
+    return wvfs
 
 def get_pixels(entry):
     """Get pixel coordinates from ntuple"""
@@ -417,7 +299,21 @@ def prepare_data(response):
             raise ValueError('Data already contains yz pair!')
     return rsp_data
 
-def sim(response, ntuple=None, **kwds):
+def extract(wvfs):
+    """Extract the waveforms for saving"""
+    
+    arrays = list()
+    for pid, wvf in wvfs.iteritems():
+            ts = wvf.keys()
+            ts.sort()
+            ys = [wvf[t] for t in ts]
+
+            to_save = [[t / _step_conversion, y] for t, y in zip(ts, ys)]
+            arrays.append([pid, to_save])
+    
+    return np.asarray(arrays)
+
+def sim(response, ntuple=None, fixed_step=0.02, **kwds):
     """
     This method will loop over the events in an ntuple.
     The ntuple, created with larg4, is expected to have
@@ -425,7 +321,12 @@ def sim(response, ntuple=None, **kwds):
         1) 3D coordinates of charge clouds close to 
            pixel plane.
         2) 2D coordinates of pixels
+
+    @param fixed_step Step size used in stepping algorithm.
     """
+    global _step_conversion, _fixed_step
+    _step_conversion = 10.0**int(str(fixed_step)[::-1].find('.'))
+    _fixed_step = fixed_step
 
     rfile = ROOT.TFile.Open(ntuple)
     rtree = rfile.Get('myana/anatree')
@@ -438,13 +339,12 @@ def sim(response, ntuple=None, **kwds):
     for entry in rtree:
         pixels_y, pixels_z = get_pixels(entry)
         break
-    
+
+    to_save = list()
     for entry in rtree:
         print 'drifting event', entry.event
-        calculate(entry, pixels_y, pixels_z, rsp_data)
-        #break
+        wvfs = calculate(entry, pixels_y, pixels_z, rsp_data)
+        data = extract(wvfs)
+        to_save.append(Array(typename='tuples', name='simwaveforms_event'+str(entry.event), data=data))
 
-    _canvas1 = ROOT.TCanvas('_canvas1', '_canvas1', 800, 800)
-    _hDiffusion1.Draw('colz')
-    
-    wait = input()
+    return to_save
