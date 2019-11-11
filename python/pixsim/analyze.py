@@ -8,7 +8,7 @@ import numpy as np
 def integrate_waveform(ts, ys, threshold=0.7, sch_time=0.02):
     """Integrate waveform and handle resets"""
 
-    ys_int, ys_sch, sch_hits = list(ys), list(ys), list()
+    ys_int, ys_sch, sch_hits = [0]*len(ys), [0]*len(ys), list()
     charge = 0 
 
     for tbin in range(0, len(ys_int)):
@@ -24,74 +24,105 @@ def integrate_waveform(ts, ys, threshold=0.7, sch_time=0.02):
 def reconstruct(ts, sch_hits, threshold=0.7, sch_time=0.02):
     """Reconstruct waveform from resets"""
 
-    reco_data = {t:0 for t in ts}
+    step_conversion = 10.0**int(str(sch_time)[::-1].find('.'))
+    base = int(step_conversion * sch_time)
+    def round_it(x, base=base):
+        return int(base * np.floor(float(x)/base))
+
+    reco_data = {round_it(step_conversion*t):0 for t in ts}
+    print reco_data.keys()
     for tbin in range(1, len(sch_hits)):
-        pre_time = sch_hits[tbin-1] 
-        cur_time = sch_hits[tbin] 
+        pre_time = round_it(step_conversion*sch_hits[tbin-1])
+        cur_time = round_it(step_conversion*sch_hits[tbin]) 
         delta_t = cur_time-pre_time
-        for tick in np.arange(pre_time, cur_time, int(100*sch_time)):
-            reco_data[tick] = 100. * threshold / delta_t
+        for tick in np.arange(pre_time, cur_time, int(step_conversion*sch_time)):
+            if tick in reco_data.keys():
+                reco_data[tick] = step_conversion * threshold / delta_t
+            else:
+                print 'Could not find tick', tick, 'in reco data'
+                raise
     
-    return reco_data
+    #return [reco_data[round_it(step_conversion*t)] for t in ts]
+    assert len(reco_data) == len(ts), 'Reco data size does not match ts'
+    return [reco_data[round_it(step_conversion*t)] for t in ts]
 
 def analyze(wvfs):
     """Area for analysis"""
 
-    hDiffusion1 = ROOT.TH2F('hDiffusion', 'hDiffusion', 10, 0, 10, 300, 0, 300)
+    hDiffusion1 = ROOT.TH2F('hDiffusion', 'hDiffusion', 20, 0, 20, 400, 0, 400)
+    hDiffusion2 = ROOT.TH2F('hDiffusion2', 'hDiffusion2', 20, 0, 20, 400, 0, 400)
     
     for evt, eventdata in enumerate(wvfs.data):
         print 'analyzing event', evt
-        if evt == 3:
-            break
+        #if evt == 3:
+        #    break
         arrs = eventdata.data
         for pid_arr in arrs:
             pid = pid_arr[0]
             pid_data = np.asarray(pid_arr[1])
 
             ts, ys = pid_data[:,0], pid_data[:,1]
+            #ts, ys = (list(t) for t in zip(*sorted(zip(ts, ys))))
             ys_int, ys_sch, sch_hits = integrate_waveform(ts, ys)
-            
-            #plt.step(ts, ys)
-            #plt.step(ts, reco_ys)
-            #plt.plot(ts, fit.GetParameter(0)*np.exp(-np.power(np.asarray(ts) - fit.GetParameter(1), 2.) / (2 * np.power(fit.GetParameter(2), 2.))))
-            #plt.show()
 
             if len(sch_hits) < 2:
                 continue
 
-            reco_data = reconstruct(ts, sch_hits) 
-            reco_ys = [reco_data[t] for t in ts]
+            try:
+                reco_ys = reconstruct(ts, sch_hits) 
+            except:
+                continue
+            
+            fig, axs = plt.subplots(2, 1, sharex=True)
+            fig.subplots_adjust(hspace=0)
+
+            axs[0].step(ts, ys, 'b', label='Input')
+            axs[0].step(ts, reco_ys, 'darkgreen', label='Reconstructed')
+            axs[0].set_ylim(0, 2.5)
+            axs[1].set_ylim(0, 2.5)
+            axs[1].step(ts, ys, 'b', label='Input')
+            axs[1].step(ts, ys_sch, 'orange', label='Resets')
+            axs[1].set_xlabel('Time [us]')
+            axs[0].set_ylabel('Current [nA]')
+            axs[1].set_ylabel('Current [nA]')
+            axs[0].legend(loc='upper left')
+            axs[1].legend(loc='upper left')
+            plt.show()
 
             sch_hits.sort()
 
-            #for hit in range(1, len(sch_hits)):
-            #    tdiff = (sch_hits[hit] - sch_hits[hit-1]) / 100
-            #    xpos = 0.1648 * (sch_hits[hit] / 100)
-            #    _hDiffusion2.Fill(tdiff, xpos)
+            for hit in range(1, len(sch_hits)):
+                tdiff = (sch_hits[hit] - sch_hits[hit-1]) 
+                xpos = 0.1648 * sch_hits[hit-1]
+                hDiffusion2.Fill(tdiff, xpos)
 
-            ts = [t/100. for t in ts]
-            thst = ROOT.TH1F('thst'+str(pid), 'thst'+str(pid), len(ts), ts[0], ts[-1])
-            max_amp = -1
-            max_amp_bin = -1
+            #thst = ROOT.TH1F('thst'+str(pid), 'thst'+str(pid), len(ts), ts[0], ts[-1])
+            #max_amp = -1
+            #max_amp_bin = -1
+            #
+            #for hbin in range(0, len(reco_ys)):
+            #    thst.SetBinContent(hbin+1, ys[hbin])
+            #    if reco_ys[hbin] > max_amp:
+            #        max_amp = reco_ys[hbin]
+            #        max_amp_bin = hbin
 
-            for hbin in range(0, len(reco_ys)):
-                thst.SetBinContent(hbin+1, ys[hbin])
-                if reco_ys[hbin] > max_amp:
-                    max_amp = reco_ys[hbin]
-                    max_amp_bin = hbin
+            #time_diff = (sch_hits[-1] - sch_hits[0]) 
+            #fit = ROOT.TF1('fit'+str(pid), 'gaus', ts[0], ts[-1])
+            #fit.SetParameter(0, max_amp)
+            #fit.SetParameter(1, ts[max_amp_bin])
+            #fit.SetParameter(2, 0.25*time_diff)
+            #
+            #thst.Fit(fit, 'QRN')
+            #print 'filling', np.power(fit.GetParameter(2), 2), fit.GetParameter(1) * 0.1643
+            #hDiffusion1.Fill(np.power(fit.GetParameter(2), 2.), fit.GetParameter(1) * 0.1643)
 
-            time_diff = (sch_hits[-1] - sch_hits[0]) / 100
-            fit = ROOT.TF1('fit'+str(pid), 'gaus', ts[0], ts[-1])
-            fit.SetParameter(0, max_amp)
-            fit.SetParameter(1, ts[max_amp_bin])
-            fit.SetParameter(2, 0.25*time_diff)
-
-            thst.Fit(fit, 'QRN')
-            #print 'filling', fit.GetParameter(1), fit.GetParameter(2)
-            hDiffusion1.Fill(fit.GetParameter(1), np.power(fit.GetParameter(2), 2.))
+            #cnv = ROOT.TCanvas('cnv', 'cnv', 800, 800)
+            #thst.Draw('colz')
+            #wait = input("Press enter")
     
     cnv = ROOT.TCanvas('cnv', 'cnv', 800, 800)
-    hDiffusion1.Draw('colz')
+    #hDiffusion1.Draw('colz')
+    hDiffusion2.Draw('colz')
     wait = input("Press enter")
 
 def best_fit(X, Y):
