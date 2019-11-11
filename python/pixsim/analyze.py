@@ -5,6 +5,8 @@ import ROOT
 import matplotlib.pyplot as plt
 import numpy as np
 
+from pixsim.driftsim import get_pixels, get_nearest, pixel_position
+
 def integrate_waveform(ts, ys, threshold=0.7, sch_time=0.02):
     """Integrate waveform and handle resets"""
 
@@ -46,7 +48,76 @@ def reconstruct(ts, sch_hits, threshold=0.7, sch_time=0.02):
     assert len(reco_data) == len(ts), 'Reco data size does not match ts'
     return [reco_data[round_it(step_conversion*t)] for t in ts]
 
+def get_nearest_pixels(nu_vtx, pixels_y, pixels_z):
+    # find nearest
+    # remember: pixels_y sorted but pid increase in decreasing y
+
+    row = get_nearest(pixels_y, nu_vtx[1])
+    col = get_nearest(pixels_z, nu_vtx[2])
+    row = len(pixels_y) - row - 1
+
+    # looking at 5x5 grid
+    row_rng = [row-2, row-1, row, row+1, row+2]
+    col_rng = [col-2, col-1, col, col+1, col+2]
+    for rb, cb in zip(row_rng, col_rng):
+        assert rb >= 0 and rb < len(pixels_y), 'Check bounds!'
+        assert cb >= 0 and cb < len(pixels_z), 'Check bounds!'
+
+    ret = list()
+    for rb in row_rng:
+        for cb in col_rng:
+            ret.append(rb * len(pixels_z) + cb)
+    return ret
+
 def analyze(wvfs):
+    rfile = ROOT.TFile.Open('nu_events.root')
+    rtree = rfile.Get('anatree/anatree')
+
+    # Using first entry to fill pixel coordinates
+    pixels_y, pixels_z = None, None
+    for entry in rtree:
+        pixels_y, pixels_z = get_pixels(entry)
+        break
+
+    for entry in rtree:
+        print 'analyzing event', entry.event
+        
+        # for some reason, the data is not loaded in the order it was saved
+        arrs = None
+        for arr in wvfs.data:
+            if str(entry.event) in arr.name:
+                arrs = arr.data
+        assert arrs is not None, 'Couldn\'t find event data'
+
+        if entry.event != 4:
+            continue
+
+        # get neutrino vertex
+        nu_vtx = [entry.nu_Vertexx[0], entry.nu_Vertexy[0], entry.nu_Vertexz[0]]
+        
+        # find nearest pixels to this vertex
+        nearest_pixel_ids = get_nearest_pixels(nu_vtx, pixels_y, pixels_z)
+        nearest_pixel_pos = [pixel_position(pid, pixels_y, pixels_z) for pid in nearest_pixel_ids]
+        print nu_vtx
+        #print nearest_pixel_ids
+        #print nearest_pixel_pos
+        
+        # plot the waveforms
+        _xs, _ys = list(), list()
+        for pid_arr in arrs:
+            pid = pid_arr[0]
+            pid_data = np.asarray(pid_arr[1])
+
+            this_pos = pixel_position(pid, pixels_y, pixels_z)
+            _xs.append(this_pos[2])
+            _ys.append(this_pos[1])
+
+            if pid not in nearest_pixel_ids:
+                continue
+        
+            #ts, ys = pid_data[:,0], pid_data[:,1]
+
+def analyze_diffusion(wvfs):
     """Area for analysis"""
 
     hDiffusion1 = ROOT.TH2F('hDiffusion', 'hDiffusion', 20, 0, 20, 400, 0, 400)

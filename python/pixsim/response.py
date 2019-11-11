@@ -48,15 +48,15 @@ def response(steps, waveforms, gain=14.0, shape_time=1.0, **kwds):
         # normalize to 1 fC so current is in nA
         #if do_norm(wvf):
         #    wvf *= chg / abs(np.sum(wvf)*step)
-        wvf = list(wvf)
-
-        # convolve
-        conv = sp.convolution(wvf, ys, dps=2)
-        conv = np.asarray([sp.functions.re(x) for x in conv])
+        #wvf = list(wvf)
+        #
+        ## convolve
+        #conv = sp.convolution(wvf, ys, dps=2)
+        #conv = np.asarray([sp.functions.re(x) for x in conv])
 
         start[count] = step.data[0,0:3]
         end[count] = step.data[-1,0:3]
-        arrays[count] = conv
+        arrays[count] = wvf #conv
         count += 1
 
     return [Array(name='start_points', typename='tuples', data=np.asarray(start)),

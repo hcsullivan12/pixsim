@@ -439,7 +439,7 @@ def cmd_gen_current(ctx, config, name, raster, step):
 @click.option('-w', '--waveforms', required=True, type=int, help='Result ID of results to use.')
 @click.option('-s', '--step', required=True, type=int, help='Result ID of results to use.')
 @click.pass_context
-def cmd_gen_current(ctx, config, name, waveforms, step):
+def cmd_gen_response(ctx, config, name, waveforms, step):
     '''
     Generate response.
     '''

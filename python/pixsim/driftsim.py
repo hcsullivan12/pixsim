@@ -49,7 +49,9 @@ def nearest_pixel(pos, pixels_y, pixels_z, eps=_eps):
     row = get_nearest(pixels_y, pos[1])
     col = get_nearest(pixels_z, pos[2])
     near_pos = [pos[0], pixels_y[row], pixels_z[col]]
-    row = len(pixels_y) - get_nearest(pixels_y, pos[1]) - 1
+
+    # for use in calculating pid
+    row = len(pixels_y) - row - 1
 
     dist = distance2d(pos, near_pos) #[(x-y)**2 for x,y in zip(pos, near_pos)]
     #dist = sum(dist)**0.5
@@ -308,9 +310,8 @@ def extract(wvfs):
             ts.sort()
             ys = [wvf[t] for t in ts]
 
-            to_save = [[t / _step_conversion, y] for t, y in zip(ts, ys)]
-            arrays.append([pid, to_save])
-    
+            to_save = [np.asarray([t / _step_conversion, y]) for t, y in zip(ts, ys)]
+            arrays.append(np.asarray([pid, np.asarray(to_save)]))
     return np.asarray(arrays)
 
 def sim(response, ntuple=None, fixed_step=0.02, **kwds):
@@ -329,7 +330,7 @@ def sim(response, ntuple=None, fixed_step=0.02, **kwds):
     _fixed_step = fixed_step
 
     rfile = ROOT.TFile.Open(ntuple)
-    rtree = rfile.Get('myana/anatree')
+    rtree = rfile.Get('anatree/anatree')
 
     # prepare response data
     rsp_data = prepare_data(response)
