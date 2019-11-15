@@ -89,8 +89,8 @@ def analyze(wvfs):
                 arrs = arr.data
         assert arrs is not None, 'Couldn\'t find event data'
 
-        if entry.event != 4:
-            continue
+        #if entry.event != 4:
+        #    continue
 
         # get neutrino vertex
         nu_vtx = [entry.nu_Vertexx[0], entry.nu_Vertexy[0], entry.nu_Vertexz[0]]
@@ -98,12 +98,13 @@ def analyze(wvfs):
         # find nearest pixels to this vertex
         nearest_pixel_ids = get_nearest_pixels(nu_vtx, pixels_y, pixels_z)
         nearest_pixel_pos = [pixel_position(pid, pixels_y, pixels_z) for pid in nearest_pixel_ids]
-        print nu_vtx
+        #print nu_vtx
         #print nearest_pixel_ids
         #print nearest_pixel_pos
         
         # plot the waveforms
         _xs, _ys = list(), list()
+        pixel_count = 0
         for pid_arr in arrs:
             pid = pid_arr[0]
             pid_data = np.asarray(pid_arr[1])
@@ -115,7 +116,17 @@ def analyze(wvfs):
             if pid not in nearest_pixel_ids:
                 continue
         
-            #ts, ys = pid_data[:,0], pid_data[:,1]
+            ts, ys = pid_data[:,0], pid_data[:,1]
+            pixel_count += 1
+            
+            plt.step(ts, ys)
+            plt.show()
+            ## write to text file
+            #filename = 'Event'+str(entry.event)+'Pixel'+str(pixel_count)+'.txt'
+            #with open(filename, 'w') as f:
+            #    for _t, _y in zip(ts, ys):
+            #        write_this = str(_t)+' '+str(_y)+'\n'
+            #        f.write(write_this)
 
 def analyze_diffusion(wvfs):
     """Area for analysis"""
