@@ -1,4 +1,4 @@
-# Integrating pixsim with a drift simulation
+# Integrating drift simulation into pixsim 
 Currently, pixsim does not offer a drift simulation. Instead, a tool like [pixgen](https://github.com/hcsullivan/pixgen) can be used to derive the charge distribution near a readout plane taking into account attenuation and diffusion effects. [pixgen](https://github.com/hcsullivan/pixgen) is a modified version of [larsim](https://cdcvs.fnal.gov/redmine/projects/larsim) that uses [Geant4](https://geant4.web.cern.ch/) to simulate various particles inside a liquid argon time projection chamber. One of the standard routines is an ionization charge drift simulation. The items that are needed for pixsim are the (x,y,z) coordinates of the drifted charge and the pixel coordinates. For the remainder of this section, it is assumed that a [ROOT](https://root.cern.ch/) ntuple contains this information.
 
 Note: It may be useful to walk through the instructions here [README](https://github.com/hcsullivan/pixgen/README.md) first as some details have been left out.
