@@ -106,6 +106,9 @@ private:
   std::vector<double> ides_voxel_x;
   std::vector<double> ides_voxel_y;
   std::vector<double> ides_voxel_z;
+  std::vector<int> ides_voxel_ch;
+  std::vector<double> pixel_y;
+  std::vector<double> pixel_z;
 
   // Other particle information
   std::vector<int>    TrackId;
@@ -212,7 +215,17 @@ void PixSimAnaTree::analyze(art::Event const & evt)
   bool isdata = false;
   if (evt.isRealData()) {isdata = true;}
   else isdata = false;
-   
+  
+  //
+  // Filling pixel positions
+  //
+  {
+    std::vector<float> chy, chz;
+    geom->GetChannelPositions(chy, chz);
+    for (size_t iCh = 0; iCh < chy.size(); iCh++)pixel_y.push_back(chy[iCh]);
+    for (size_t iCh = 0; iCh < chz.size(); iCh++)pixel_z.push_back(chz[iCh]);
+  }
+
   //
   // Filling Sim channels 
   //
@@ -224,11 +237,17 @@ void PixSimAnaTree::analyze(art::Event const & evt)
     {
       const auto& TDCIDEs = Simlist.at(iCh)->TDCIDEMap(); 
       auto channel = Simlist.at(iCh)->Channel();
+      if (channel < 0 || channel >= geom->Nchannels())continue;
+      
       auto pixelPosition = geom->GetChannelPosition(channel);
       for (const auto& TDCinfo : TDCIDEs)
       {
         for (const auto& ide : TDCinfo.second)
         {
+	  // Note: The definition of xyz was changed. xyz is the 
+	  // position of the charge cloud at the pixel plane
+	  // smeared by diffusion and attenuation.
+	  // The x in xyz should be = 0.
           num++;
           ides_tid.push_back(ide.trackID);
           ides_numElectrons.push_back(ide.numElectrons);
@@ -242,6 +261,7 @@ void PixSimAnaTree::analyze(art::Event const & evt)
           ides_voxel_x.push_back(x);
           ides_voxel_y.push_back(pixelPosition[1]);
           ides_voxel_z.push_back(pixelPosition[2]);
+	  ides_voxel_ch.push_back(channel);
         }
       }
     } 
@@ -411,7 +431,9 @@ void PixSimAnaTree::beginJob()
   fTree->Branch("ides_voxel_x", &ides_voxel_x);
   fTree->Branch("ides_voxel_y", &ides_voxel_y);
   fTree->Branch("ides_voxel_z", &ides_voxel_z);
-
+  fTree->Branch("ides_voxel_ch", &ides_voxel_ch);
+  fTree->Branch("pixel_y", &pixel_y);
+  fTree->Branch("pixel_z", &pixel_z);
 }
 
 //--------------------------------------------------------------------
@@ -447,6 +469,9 @@ void PixSimAnaTree::ResetVars()
   ides_voxel_x.clear();
   ides_voxel_y.clear();
   ides_voxel_z.clear();
+  ides_voxel_ch.clear();
+  pixel_y.clear();
+  pixel_z.clear();
 
   nu_pdg.clear();
   nu_ndau.clear();

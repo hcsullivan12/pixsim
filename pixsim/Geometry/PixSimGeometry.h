@@ -170,6 +170,8 @@ class PixSimGeometry : public geo::DetectorGeometry
 
   
     std::vector<float> GetChannelPosition(const int& ch) const;
+    void GetChannelPositions(std::vector<float>& d1, std::vector<float>& d2) const
+      { d1 = fSimpleGeoY; d2 = fSimpleGeoZ; }
 
   private:
 

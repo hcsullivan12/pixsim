@@ -61,6 +61,7 @@ namespace geo{
       virtual float         ChannelSpacing() const = 0;
 
       virtual std::vector<float> GetChannelPosition(const int& ch) const = 0;
+      virtual void GetChannelPositions(std::vector<float>& d1, std::vector<float>& d2) const = 0;
 
     protected:
       DetectorGeometry() = default;

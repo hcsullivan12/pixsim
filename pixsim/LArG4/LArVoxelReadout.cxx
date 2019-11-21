@@ -550,6 +550,11 @@ namespace pixsimg4 {
       // Now store them in SimChannels
       ChannelMap_t& ChannelDataMap = fChannelMaps[cryostat][tpc];
 
+      // @note Saving true x coordinate but smeared yz 
+      // for field sim
+      //double xyz_ = {xyz[0],xyz1[1],xyz[2]};
+      
+
       // browse deposited data on each channel: (channel; deposit data in time)
       for(auto const& deposit_per_channel: DepositsToStore){
 
@@ -572,7 +577,7 @@ namespace pixsimg4 {
           channelData.AddIonizationElectrons(trackID,
                                              deposit_per_tdc.first,
                                              deposit_per_tdc.second.electrons,
-                                             xyz,
+                                             xyz1,
                                              deposit_per_tdc.second.energy);
 
         } // for deposit on TDCs
