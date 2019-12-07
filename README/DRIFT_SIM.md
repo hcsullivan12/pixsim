@@ -13,8 +13,14 @@ Note: For any command, you can add the `--help` flag to view the options for the
 ## Initial steps
 Generate the geometry
 ```
-$ pix gen geo -c <geometry_section_name> -o <name_of_geo_file>
+$ pix gen geo -c <geometry_section_name> -o tpcgeometry.geo
 ```
+You can run 
+```
+gmsh tpcgeometry.geo
+``` 
+to make the mesh, e.g. in the window, click *Mesh->2D* and *File->Save Mesh*. 
+
 Generate the domain map
 ```
 $ pix gen dmap
