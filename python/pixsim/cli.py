@@ -756,7 +756,7 @@ def cmd_ana(ctx, result):
         return
 
     import pixsim.analyze as ana
-    ana.analyze(res)
+    ana.analyze(res.data)
 
 
 ################################################################

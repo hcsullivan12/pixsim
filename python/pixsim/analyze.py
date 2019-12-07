@@ -70,7 +70,84 @@ def get_nearest_pixels(nu_vtx, pixels_y, pixels_z):
     return ret
 
 def analyze(wvfs):
-    rfile = ROOT.TFile.Open('nu_events.root')
+    rootfile = 'ar39_events.root'
+    print 'analyzing', rootfile
+
+    rfile = ROOT.TFile.Open(rootfile, 'UPDATE')
+    rtree = rfile.Get('anatree/anatree')
+
+    from array import array
+
+    otree = ROOT.TTree('data', 'Data tree')
+    evt_id = array( 'i', [ 0 ] )
+    pix_id = ROOT.std.vector(int)()
+    pix_to_rtds = ROOT.std.vector(ROOT.std.vector(float))()
+
+    otree._evt_id = evt_id
+    otree._pix_id = pix_id
+    otree._pix_to_rtds = pix_to_rtds
+
+    otree.Branch('evt_id', evt_id, 'evt_id/I')
+    otree.Branch('pix_id', pix_id)
+    otree.Branch('pix_to_rtds', pix_to_rtds)
+
+    # Using first entry to fill pixel coordinates
+    pixels_y, pixels_z = None, None
+    for entry in rtree:
+        pixels_y, pixels_z = get_pixels(entry)
+        break
+
+    for entry in rtree:
+        print 'analyzing event', entry.event
+        
+        # for some reason, the data is not loaded in the order it was saved
+        arrs = None
+        for arr in wvfs:
+            if str(entry.event) in arr.name:
+                arrs = arr.data
+        assert arrs is not None, 'Couldn\'t find event data'
+    
+        # fill data
+        evt_id[0] = entry.event
+        
+        # plot the waveforms
+        _xs, _ys = list(), list()
+        for pid_arr in arrs:
+            pid = pid_arr[0]
+            pid_data = np.asarray(pid_arr[1])
+    
+            this_pos = pixel_position(pid, pixels_y, pixels_z)
+            _xs.append(this_pos[2])
+            _ys.append(this_pos[1])
+        
+            ts, ys = pid_data[:,0], pid_data[:,1]
+            ys_int, ys_sch, sch_hits = integrate_waveform(ts, ys)
+    
+            ##if len(sch_hits) > 1:
+            #   #plt.step(ts, ys)
+            #   #plt.step(ts, ys_sch)
+            #   #plt.show()
+    
+            temp_vec = ROOT.std.vector(float)()
+            for hit in sch_hits:
+                temp_vec.push_back(hit)
+    
+            if len(sch_hits) > 0:
+                pix_id.push_back(pid)
+                pix_to_rtds.push_back(temp_vec)
+    
+        otree.Fill()
+        
+    otree.Write()
+    #rfile.Close()
+
+    #ofile = ROOT.TFile.Open('datatree.root', 'RECREATE')
+    #otree.Write()
+
+            
+
+def analyze_nu(wvfs):
+    rfile = ROOT.TFile.Open('ar39_events.root')
     rtree = rfile.Get('anatree/anatree')
 
     # Using first entry to fill pixel coordinates
@@ -84,7 +161,7 @@ def analyze(wvfs):
         
         # for some reason, the data is not loaded in the order it was saved
         arrs = None
-        for arr in wvfs.data:
+        for arr in wvfs:
             if str(entry.event) in arr.name:
                 arrs = arr.data
         assert arrs is not None, 'Couldn\'t find event data'
@@ -134,7 +211,7 @@ def analyze_diffusion(wvfs):
     hDiffusion1 = ROOT.TH2F('hDiffusion', 'hDiffusion', 20, 0, 20, 400, 0, 400)
     hDiffusion2 = ROOT.TH2F('hDiffusion2', 'hDiffusion2', 20, 0, 20, 400, 0, 400)
     
-    for evt, eventdata in enumerate(wvfs.data):
+    for evt, eventdata in enumerate(wvfs):
         print 'analyzing event', evt
         #if evt == 3:
         #    break
