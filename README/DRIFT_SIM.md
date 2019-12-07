@@ -6,7 +6,7 @@ Note: the *python/pixsim/driftsim.py* is a concrete example of integrating drift
 # Example 
 This section will walk through a simulation integrating results from [pixgen](https://github.com/hcsullivan/pixgen). Let's use the alias `pix` defined as
 ```
-$ alias pix='pixsim -c boxtpc.cfg -s test.db -m tpcgeometry.msh'
+$ alias pix='pixsim -c /path/to/boxtpc.cfg -s test.db -m tpcgeometry.msh'
 ```
 Note: For any command, you can add the `--help` flag to view the options for the command's options. 
 
