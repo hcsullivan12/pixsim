@@ -222,7 +222,7 @@ def cmd_gen_weight(ctx, config, name, dmap, domains):
 @cmd_gen.command("raster")
 @click.option('-c', '--config', default='weight_raster', type=str, help='Section name in config file.')
 @click.option('-n', '--name', default='', type=str, help='Prefix for result names.')
-@click.option('b', '--boundary', type=str, required=True,
+@click.option('-b', '--boundary', type=str, required=True,
               help='Range of boundary result ids. \n\
               Ex. \n\
               -r 2:6 sources ids ranging from 2 to and including 6.\n\
