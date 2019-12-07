@@ -30,7 +30,7 @@ This section will walk through a simulation using the *boxtpc3/sphere_pads/with_
 ```
 $ alias pix='pixsim -c boxtpc.cfg -s test.db -m tpcgeometry.msh'
 ```
-The configuration file *boxtpc.cfg* defines the parameters to use in the various stages of the simulation. The results will be saved in a database *test.db*. Although not every algorithm needs it, the mesh file *tpcgeometry.msh* is passed in using the `-m` flag.
+The configuration file *boxtpc.cfg* defines the parameters to use in the various stages of the simulation. See *drift_sim/with_grid/boxtpc.cfg* as an example. The results will be saved in a database *test.db*. Although not every algorithm needs it, the mesh file *tpcgeometry.msh* is passed in using the `-m` flag.
 
 To view a complete list of available commands, run 
 ```
