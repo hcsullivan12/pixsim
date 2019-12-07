@@ -41,8 +41,10 @@ Instead of averaging responses across different pixels, we can derive the respon
 
 Setting `domain=50` in the configuration file under the section `weighting`, calculate the weighting field for pixel domain ID 50
 ```
-$ pix boundary -c weighting
+$ pix boundary -c weighting -n boundary_weight_domain_50
+$ pix raster -b boundary_weight_domain_50 -n raster_weight_domain_50
 ```
+Note: You must specify the *_50* (or *_domainID*) at the end of the name.
 
 ## Generating the steps
 We now have the velocity field and the weighting field. The next step is to derive the paths that unit charges would take near the pixel plane. To do this *pixsim* requires knowing the initial points to step from--the vertices.
@@ -82,7 +84,7 @@ The result is shown below
 
 Calculate induced current
 ```
-$ pix gen current 
+$ pix gen current -r <raster_result_id> -s <step_result_id>
 ```
 Convolve field response with electronics response
 ```

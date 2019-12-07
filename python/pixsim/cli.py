@@ -74,8 +74,7 @@ def add_params(ctx, par):
 def pythonify(id_range, total_ids):
     """Convert range string to end point ids"""
     if ':' not in id_range:
-        click.echo('Error. Do not understand range {}'.format(id_range))
-        return [None]*3
+        return int(id_range), int(id_range), 1
 
     fst_lst = id_range.split(':')
     fst_lst = [int(s) for s in fst_lst if len(s) > 0]
