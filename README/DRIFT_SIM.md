@@ -70,6 +70,10 @@ Run the stepping algorithm for these vertices
 ```
 $ pix gen step 
 ```
+The result is shown below
+
+![steps](steps3.png)
+
 Calculate induced current
 ```
 $ pix gen current 
@@ -82,4 +86,16 @@ After listing the path to the *pixgen* ntuple in the configuration file, run the
 ```
 $ pix sim
 ```
+This command will do the following:
 
+1. For each charge cloud, find nearest response based on promixity to nearest pixel.
+2. When a pixel collects its first charge cloud, a waveform is made from the nearest response.
+3. As a pixel collects more charge clouds, the nearest response is added to the waveforms saved previously, resulting in a superposition of responses centered on the times of arrival.
+4. Final waveforms are saved in the database.
+
+## Analysis
+The entry point for analyzing these waveforms is through the command
+```
+pix ana
+```
+This runs the *analyze* method in the file *python/pixsim/analyze.py*. Note, this is an analysis script, so modifications are expected. This may be slow, based on how many events were simulated in the previous step. 
