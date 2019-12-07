@@ -38,7 +38,7 @@ $ sudo apt install libtbb-dev libtbb2 cython python-sphinx
 Now, build:
 ```
 $ mkdir build && cd build
-$ cmake -DCMAKE_INSTALL_PREFIX=/path/to/bempp_install ../
+$ cmake -DCMAKE_INSTALL_PREFIX=/path/to/bempp-install ../
 $ make -j8 && make install
 ```
 If you run into problems with the [install](http://roybijster.nl/2018/08/installing-bem-from-source/), you may need to install boost
