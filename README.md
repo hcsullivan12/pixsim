@@ -28,7 +28,7 @@ There are a few naming conventions throughout the simulation. The geometry const
 # Example
 This section will walk through a simulation using the *boxtpc3/sphere_pads/with_grid* configuration and will use the alias `pix` defined as
 ```
-$ alias pix='pixsim -c boxtpc.cfg -s test.db -m tpcgeometry.msh'
+$ alias pix='pixsim -c /path/to/boxtpc.cfg -s test.db -m tpcgeometry.msh'
 ```
 The configuration file *boxtpc.cfg* defines the parameters to use in the various stages of the simulation. See *drift_sim/with_grid/boxtpc.cfg* as an example. The results will be saved in a database *test.db*. Although not every algorithm needs it, the mesh file *tpcgeometry.msh* is passed in using the `-m` flag.
 
