@@ -199,4 +199,5 @@ Export a range of results
 ```
 $ pix gen export -s <result_type> -o <name_prefix> -r <first_result_id>:<last_result_id>
 ```
+where result_type is *boundary*, *raster*, or *step*.
 ![alt text](https://raw.githubusercontent.com/hcsullivan12/picture_store/master/steps1.png "Steps")
