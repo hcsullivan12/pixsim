@@ -63,7 +63,7 @@ It’s recommended to install in a virtualenv.
 ```
 $ virtualenv --system-site-packages venv
 $ source venv/bin/activate
-$ pip install pygmsh meshio
+$ pip install pygmsh meshio sympy
 $ git clone https://github.com/hcsullivan12/pixsim.git
 $ cd pixsim
 $ python setup.py install
