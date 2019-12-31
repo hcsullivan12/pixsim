@@ -10,6 +10,8 @@ $ alias pix='pixsim -c /path/to/boxtpc.cfg -s test.db -m tpcgeometry.msh'
 ```
 Note: For any command, you can add the `--help` flag to view the options for the command's options. 
 
+Note: setup your virutal environment (e.g. source ../venv/bin/activate ), note: JAA specific right now
+
 ## Initial steps
 Generate the geometry
 ```
