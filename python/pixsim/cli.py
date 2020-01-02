@@ -474,6 +474,24 @@ def cmd_boundary(ctx, config, name):
     save_result(ctx, res)
 
 ################################################################
+# Weighting
+@cli.command("weighting")
+@click.option('-c', '--config', default='weighting', help='Section name in config.')
+@click.option('-n', '--name', default='boundary_weight_domain_', type=str, help='Name of result.')
+@click.pass_context
+def cmd_weighting(ctx, config, name):
+    """
+    Solve boundary value problem. Takes the input msh file and solves for
+    dirichlet and nuemann coefficients on the boundaries.
+    """
+    from pixsim.boundary import boundary
+    arrays = boundary(ctx.obj['mesh_filename'], **ctx.obj['cfg'][config])
+
+    outname = name + str(**ctx.obj['cfg'][config][domain])
+    res = Result(name=outname, typename='boundary', data=arrays)
+    save_result(ctx, res)
+
+################################################################
 # Plot
 @cli.group("plot", help="Plot results.")
 @click.pass_context

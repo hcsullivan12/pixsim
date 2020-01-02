@@ -43,10 +43,10 @@ Instead of averaging responses across different pixels, we can derive the respon
 
 Setting `domain=50` in the configuration file under the section `weighting`, calculate the weighting field for pixel domain ID 50
 ```
-$ pix boundary -c weighting -n boundary_weight_domain_50
+$ pix weighting -c weighting 
 $ pix raster -b boundary_weight_domain_50 -n raster_weight_domain_50
 ```
-Note: You must specify the *_50* (or *_domainID*) at the end of the name.
+where *boundary_weight_domain_50* is the result of the weighting stage. 
 
 ## Generating the steps
 We now have the velocity field and the weighting field. The next step is to derive the paths that unit charges would take near the pixel plane. To do this *pixsim* requires knowing the initial points to step from--the vertices.
